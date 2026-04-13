@@ -1,0 +1,69 @@
+---
+title: "Next.js — Pages Router"
+description: "Install Tracelit in a Next.js Pages Router project via _app.tsx. SSR-safe with automatic SPA route tracking."
+icon: "js"
+iconType: "duotone"
+---
+
+<img src="/images/nextjs.svg" alt="Next.js" style={{ width: '40px', marginBottom: '4px' }} />
+
+```bash
+npm install @tracelit/tracker
+```
+
+Add `init()` inside `useEffect` in `_app.tsx` so it only runs in the browser:
+
+```tsx
+// pages/_app.tsx
+import { useEffect } from 'react'
+import { init } from '@tracelit/tracker'
+import type { AppProps } from 'next/app'
+
+export default function App({ Component, pageProps }: AppProps) {
+  useEffect(() => {
+    init({ token: 'YOUR_TOKEN_HERE' })
+  }, [])
+  return <Component {...pageProps} />
+}
+```
+
+Tracelit automatically tracks client-side navigation between pages via `history.pushState` — no extra setup needed.
+
+---
+
+## Adding user identity
+
+```tsx
+// pages/_app.tsx
+import { useEffect } from 'react'
+import { init, identify, reset } from '@tracelit/tracker'
+import type { AppProps } from 'next/app'
+
+export default function App({ Component, pageProps }: AppProps) {
+  const { user } = pageProps  // or from your auth hook
+
+  useEffect(() => {
+    init({ token: 'YOUR_TOKEN_HERE' })
+  }, [])
+
+  useEffect(() => {
+    if (user) identify(user.id, { email: user.email, plan: user.plan })
+    else reset()
+  }, [user])
+
+  return <Component {...pageProps} />
+}
+```
+
+---
+
+## What's next?
+
+<Columns cols={2}>
+  <Card title="Identify users" icon="user" href="/tracking/identify-users">
+    Full guide to linking sessions to real users.
+  </Card>
+  <Card title="Feature tagging" icon="tag" href="/features/feature-tagging">
+    Tag routes and flows in session replays.
+  </Card>
+</Columns>

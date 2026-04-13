@@ -1,0 +1,126 @@
+---
+title: "Configuration reference"
+description: "Complete reference for all init() options, replay settings, script tag variants, bundle sizes, and every exported function in @tracelit/tracker."
+icon: "sliders"
+iconType: "duotone"
+---
+
+## `init(config)`
+
+Call `init()` once when your app loads. It's safe to call in SSR environments — it checks for `window` internally and does nothing on the server. Calling it multiple times is also safe — subsequent calls are ignored.
+
+```ts
+import { init } from '@tracelit/tracker'
+
+init({
+  token: 'YOUR_TOKEN_HERE',
+  debug: false,
+  monitorConsole: false,
+  apiBase: 'https://api.tracelit.io',
+  replay: {
+    mode: 'always',
+    idleTimeoutMs: 300000,
+    maxDurationMs: 2700000,
+    blocklist: [],
+    sampleRate: 1,
+    fullSnapshotIntervalMs: 300000,
+  }
+})
+```
+
+---
+
+## Top-level options
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `token` | `string` | **required** | Your site token from the Tracelit dashboard under **Settings → Site Token**. |
+| `debug` | `boolean` | `false` | Log all captured events to the browser console. Remove before going to production. |
+| `monitorConsole` | `boolean` | `false` | Capture `console.error` and `console.warn` calls as error events. |
+| `apiBase` | `string` | `https://api.tracelit.io` | Override the ingest endpoint — useful for proxying through your own domain. |
+
+---
+
+## Replay options (`replay.*`)
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `mode` | `'always' \| 'trigger' \| 'off'` | `'always'` | `always`: record every session. `trigger`: only record when `startReplay()` is called. `off`: disable replay entirely. |
+| `blocklist` | `string[]` | `[]` | Path substrings or regex patterns where recording is paused. Example: `['/admin', '/billing']`. |
+| `idleTimeoutMs` | `number` | `300000` | Pause recording after this many milliseconds of user inactivity (default: 5 minutes). |
+| `maxDurationMs` | `number` | `2700000` | Hard-stop recording after this many milliseconds regardless of activity (default: 45 minutes). |
+| `sampleRate` | `number` | `1` | Fraction of sessions to record, from `0` to `1`. Use `0.1` to record 10% of sessions. |
+| `fullSnapshotIntervalMs` | `number` | `300000` | How often to take a full DOM snapshot during recording (default: 5 minutes). Lower values increase replay accuracy but also data size. |
+
+---
+
+## Script tag options
+
+### Standard (recommended)
+
+The async snippet queues any API calls made before the SDK loads and replays them once the script is ready:
+
+```html
+<script>
+  !function(w,d){
+    var t=w.__tl={_q:[],token:'YOUR_TOKEN_HERE'};
+    ['init','identify','reset','startReplay','stopReplay','optOut','optIn','destroy']
+      .forEach(function(m){t[m]=function(){t._q.push([m,[].slice.call(arguments)])}});
+    var s=d.createElement('script');s.async=!0;
+    s.src='https://cdn.tracelit.io/t.js';d.head.appendChild(s);
+  }(window,document);
+</script>
+```
+
+### Pinned version (immutable CDN cache)
+
+Use this when you want to lock to a specific version to prevent unexpected changes:
+
+```html
+<script src="https://cdn.tracelit.io/t@1.2.6.js" async></script>
+```
+
+### Strict CSP (rrweb bundled in)
+
+If your Content Security Policy blocks dynamically injected `<script>` tags, use the full bundle. It's larger but loads no additional scripts at runtime:
+
+```html
+<script>
+  !function(w,d){
+    var t=w.__tl={_q:[],token:'YOUR_TOKEN_HERE'};
+    ['init','identify','reset','startReplay','stopReplay','optOut','optIn','destroy']
+      .forEach(function(m){t[m]=function(){t._q.push([m,[].slice.call(arguments)])}});
+    var s=d.createElement('script');s.async=!0;
+    s.src='https://cdn.tracelit.io/t.full.js';d.head.appendChild(s);
+  }(window,document);
+</script>
+```
+
+---
+
+## Bundle sizes
+
+| File | Gzipped size | Notes |
+| --- | --- | --- |
+| `t.js` (CDN) | **< 20 KB** | rrweb loaded separately after page load |
+| `t.full.js` (CDN) | ~60 KB | rrweb bundled in — use for strict CSP |
+| `@tracelit/tracker` (ESM) | < 2 KB | The npm package entry point only |
+
+The CDN script loads with `async` and never blocks rendering. rrweb is injected 1.5 seconds after `window.load` — not at initial page load — so it doesn't affect your Core Web Vitals.
+
+---
+
+## All exported functions
+
+| Function | Description |
+| --- | --- |
+| `init(config)` | Initialise tracking. Safe to call in SSR, safe to call multiple times. |
+| `identify(userId, traits?)` | Link the session to a known user. |
+| `reset()` | Clear the stored user identity. Call on logout. |
+| `startReplay(feature?)` | Start a named feature segment in the replay timeline. |
+| `stopReplay(feature?)` | End a named feature segment. |
+| `getActiveFeatures()` | Returns an array of currently active feature tag strings. |
+| `optOut()` | Stop all tracking and persist the preference. |
+| `optIn()` | Clear the opt-out flag. Tracking resumes on next page load. |
+| `isOptedOut()` | Returns `true` if the user has opted out. |
+| `destroy()` | Completely remove Tracelit — removes listeners, restores globals, flushes buffer. |

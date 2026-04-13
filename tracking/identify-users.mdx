@@ -1,0 +1,201 @@
+---
+title: "Identify users"
+description: "Link anonymous sessions to real users in your system with one line of code. Filter replays, errors, and analytics by user ID or traits like email and plan."
+icon: "user-check"
+iconType: "duotone"
+---
+
+By default, Tracelit tracks anonymous sessions. If you call `identify()` after a user logs in, every event from that point on (and future sessions on that device) will be linked to that user in your dashboard.
+
+<img
+  src="/images/identified-session.png"
+  alt="Tracelit session replay player header showing an identified user with their ID, email, and plan traits"
+  className="rounded-lg"
+/>
+
+---
+
+## Basic usage
+
+Call `identify()` as soon as you know who the user is — after login, after an auth check, or anywhere you have access to their ID.
+
+```ts
+import { identify } from '@tracelit/tracker'
+
+identify('user_abc123')
+```
+
+Pass optional traits as a second argument — any key-value pairs you want visible in the dashboard:
+
+```ts
+identify('user_abc123', {
+  email: 'alice@example.com',
+  plan: 'pro',
+  company: 'Acme Corp',
+})
+```
+
+You don't have to send an email. The user ID can be any string — a database UUID, a hashed value, a display name. Email is just an optional trait.
+
+---
+
+## What happens in the dashboard
+
+After calling `identify()`:
+
+- Sessions show a **user chip** — click it to see all sessions for that user
+- Filter the sessions list and error log by user ID or email trait
+- The replay player header shows the identified user's ID and traits
+- The replay timeline shows a **Identified as user_abc123** marker at the exact moment `identify()` was called
+- Errors are linked to the user, so you can see all errors a specific person experienced
+
+---
+
+## Reset on logout
+
+Call `reset()` when the user logs out. This clears the stored identity so future sessions are anonymous again.
+
+```ts
+import { reset } from '@tracelit/tracker'
+
+reset()
+```
+
+The identity is stored in `localStorage` and persists across page loads. If you don't call `reset()`, the next session on the same device will still be linked to the same user.
+
+---
+
+## React example
+
+```tsx
+import { useEffect } from 'react'
+import { identify, reset } from '@tracelit/tracker'
+
+function useTracelitIdentity(user: { id: string; email: string; plan: string } | null) {
+  useEffect(() => {
+    if (user) {
+      identify(user.id, { email: user.email, plan: user.plan })
+    } else {
+      reset()  // user logged out
+    }
+  }, [user])
+}
+
+// Use it in your root component alongside your auth hook:
+function App() {
+  const { user } = useAuth()
+  useTracelitIdentity(user)
+  return <Router />
+}
+```
+
+---
+
+## Next.js App Router example
+
+Split the init and identity concerns into two components — keeps things clean:
+
+```tsx
+// components/TracelitIdentity.tsx
+'use client'
+import { useEffect } from 'react'
+import { identify, reset } from '@tracelit/tracker'
+
+export function TracelitIdentity({
+  userId,
+  traits,
+}: {
+  userId?: string
+  traits?: Record<string, string>
+}) {
+  useEffect(() => {
+    if (userId) {
+      identify(userId, traits)
+    } else {
+      reset()
+    }
+  }, [userId])
+  return null
+}
+```
+
+```tsx
+// app/layout.tsx
+import { Tracelit } from '@/components/Tracelit'
+import { TracelitIdentity } from '@/components/TracelitIdentity'
+import { getServerSession } from 'next-auth'
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await getServerSession()
+  return (
+    <html>
+      <body>
+        {children}
+        <Tracelit />
+        <TracelitIdentity
+          userId={session?.user?.id}
+          traits={{
+            email: session?.user?.email,
+            plan: session?.user?.plan,
+          }}
+        />
+      </body>
+    </html>
+  )
+}
+```
+
+---
+
+## Script tag (plain HTML)
+
+If you're using the script tag approach, you can call `identify()` on the global `__tl` object — it's safe to call before the SDK finishes loading:
+
+```html
+<script>
+  !function(w,d){
+    var t=w.__tl={_q:[],token:'YOUR_TOKEN_HERE'};
+    ['init','identify','reset','startReplay','stopReplay','optOut','optIn','destroy']
+      .forEach(function(m){t[m]=function(){t._q.push([m,[].slice.call(arguments)])}});
+    var s=d.createElement('script');s.async=!0;
+    s.src='https://cdn.tracelit.io/t.js';d.head.appendChild(s);
+  }(window,document);
+</script>
+
+<script>
+  // After your auth check resolves — safe to call before t.js loads:
+  fetch('/api/me')
+    .then(r => r.json())
+    .then(user => {
+      __tl.identify(user.id, { email: user.email, plan: user.plan })
+    })
+</script>
+```
+
+---
+
+## Privacy notes
+
+<AccordionGroup>
+  <Accordion title="What data is stored?">
+    The user ID and traits you pass are stored on your Tracelit project. Nothing is inferred — Tracelit only stores exactly what you send.
+  </Accordion>
+  <Accordion title="Is identify() GDPR-safe?">
+    Yes, as long as you treat it like any other user data. If a user requests deletion, delete their record via the Tracelit dashboard. Call `reset()` client-side on logout so no future sessions are linked to them on that device.
+  </Accordion>
+  <Accordion title="Can I send a hashed email instead of a raw email?">
+    Absolutely. The `email` trait is optional, and you can pass any opaque key as the user ID. A SHA-256 hashed email or a database UUID both work fine.
+  </Accordion>
+  <Accordion title="What if I accidentally pass a sensitive key?">
+    In `debug` mode, the SDK warns you if a trait key looks sensitive — for example, `password`, `token`, `card`, or `ssn`. These warnings appear in the browser console.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## API reference
+
+| Function | Description |
+| --- | --- |
+| `identify(userId, traits?)` | Link the current session (and all future sessions on this device) to a user. |
+| `reset()` | Clear the stored user identity. Call on logout. |

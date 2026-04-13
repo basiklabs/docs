@@ -1,0 +1,117 @@
+---
+title: "Next.js — App Router"
+description: "Install Tracelit in a Next.js App Router project using a Client Component. SSR-safe, no window guard needed."
+icon: "js"
+iconType: "duotone"
+---
+
+<img src="/images/nextjs.svg" alt="Next.js" style={{ width: '40px', marginBottom: '4px' }} />
+
+```bash
+npm install @tracelit/tracker
+```
+
+Because `init()` needs to run in the browser (not on the server), wrap it in a Client Component.
+
+---
+
+**1. Create the component**
+
+```tsx
+// components/Tracelit.tsx
+'use client'
+import { useEffect } from 'react'
+import { init } from '@tracelit/tracker'
+
+export function Tracelit() {
+  useEffect(() => {
+    init({ token: 'YOUR_TOKEN_HERE' })
+  }, [])
+  return null
+}
+```
+
+**2. Add it to your root layout**
+
+```tsx
+// app/layout.tsx
+import { Tracelit } from '@/components/Tracelit'
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html>
+      <body>
+        {children}
+        <Tracelit />
+      </body>
+    </html>
+  )
+}
+```
+
+<Note>
+  `init()` is a no-op on the server — it checks for `window` internally. You don't need a `typeof window !== 'undefined'` guard.
+</Note>
+
+---
+
+## Adding user identity (recommended)
+
+Create a second Client Component to call `identify()` once your session is available:
+
+```tsx
+// components/TracelitIdentity.tsx
+'use client'
+import { useEffect } from 'react'
+import { identify, reset } from '@tracelit/tracker'
+
+export function TracelitIdentity({
+  userId,
+  traits,
+}: {
+  userId?: string
+  traits?: Record<string, string>
+}) {
+  useEffect(() => {
+    if (userId) identify(userId, traits)
+    else reset()
+  }, [userId])
+  return null
+}
+```
+
+```tsx
+// app/layout.tsx
+import { Tracelit } from '@/components/Tracelit'
+import { TracelitIdentity } from '@/components/TracelitIdentity'
+import { getServerSession } from 'next-auth'
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await getServerSession()
+  return (
+    <html>
+      <body>
+        {children}
+        <Tracelit />
+        <TracelitIdentity
+          userId={session?.user?.id}
+          traits={{ email: session?.user?.email, plan: session?.user?.plan }}
+        />
+      </body>
+    </html>
+  )
+}
+```
+
+---
+
+## What's next?
+
+<Columns cols={2}>
+  <Card title="Identify users" icon="user" href="/tracking/identify-users">
+    Full guide to linking sessions to real users.
+  </Card>
+  <Card title="Feature tagging" icon="tag" href="/features/feature-tagging">
+    Tag routes and flows in session replays.
+  </Card>
+</Columns>

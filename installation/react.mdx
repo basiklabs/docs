@@ -1,0 +1,53 @@
+---
+title: "React"
+description: "Install Tracelit in a React app with one import. Supports Vite, Create React App, and any React setup."
+icon: "react"
+iconType: "duotone"
+---
+
+<img src="/images/react.svg" alt="React" style={{ width: '40px', marginBottom: '4px' }} />
+
+```bash
+npm install @tracelit/tracker
+```
+
+Add `init()` once at the top level of your app — `main.tsx` or `App.tsx` works great.
+
+```tsx
+// src/main.tsx  or  src/App.tsx
+import { init } from '@tracelit/tracker'
+
+init({ token: 'YOUR_TOKEN_HERE' })
+```
+
+That's it. Tracelit handles SPA route changes automatically via `history.pushState` — no router config needed.
+
+<Tip>
+  Using authentication? Call `identify()` after login to link sessions to real users. See [Identify users](/tracking/identify-users).
+</Tip>
+
+---
+
+## What's tracked automatically
+
+Once `init()` runs, all of this starts working with zero extra code:
+
+- Page views (including client-side route changes)
+- Clicks, rage clicks, and scroll depth
+- Session replay
+- JavaScript and API errors
+- Performance metrics (LCP, FCP, TTFB)
+- Live visitor count
+
+---
+
+## What's next?
+
+<Columns cols={2}>
+  <Card title="Identify users" icon="user" href="/tracking/identify-users">
+    Link sessions to real users after login.
+  </Card>
+  <Card title="Feature tagging" icon="tag" href="/features/feature-tagging">
+    Mark flows like checkout or onboarding in replays.
+  </Card>
+</Columns>

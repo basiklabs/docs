@@ -1,0 +1,81 @@
+---
+title: "Vanila JS"
+description: "Add Tracelit to any website with a single script tag — no npm, no build step. Works with plain HTML, WordPress, Webflow, Shopify, and any CMS."
+icon: "html5"
+iconType: "duotone"
+---
+
+<img src="/images/html5.svg" alt="HTML5" style={{ width: '40px', marginBottom: '4px' }} />
+
+No npm. No build step. Paste this inside the `<head>` of every page and you're done.
+
+```html
+<script>
+  !function(w,d){
+    var t=w.__tl={_q:[],token:'YOUR_TOKEN_HERE'};
+    ['init','identify','reset','startReplay','stopReplay','optOut','optIn','destroy']
+      .forEach(function(m){t[m]=function(){t._q.push([m,[].slice.call(arguments)])}});
+    var s=d.createElement('script');s.async=!0;
+    s.src='https://cdn.tracelit.app/t.js';d.head.appendChild(s);
+  }(window,document);
+</script>
+```
+
+Replace `YOUR_TOKEN_HERE` with the token from **Settings → Site Token** in your dashboard.
+
+<Tip>
+  Any API calls you make (like `__tl.identify()`) before the SDK finishes loading are queued and replayed automatically — so you can call them on the very next line.
+</Tip>
+
+---
+
+## Adding user identity
+
+```html
+<script>
+  fetch('/api/me').then(r => r.json()).then(user => {
+    __tl.identify(user.id, { email: user.email, plan: user.plan })
+  })
+</script>
+```
+
+---
+
+## Pin to a specific version
+
+Use this when you want to lock to a specific release and never receive automatic updates:
+
+```html
+<script src="https://cdn.tracelit.app/t@1.2.6.js" async></script>
+```
+
+---
+
+## Strict CSP (rrweb bundled in)
+
+If your Content Security Policy blocks dynamically injected `<script>` tags, use the full bundle. It's larger (~60 KB gzipped vs < 20 KB) but loads no additional scripts at runtime:
+
+```html
+<script>
+  !function(w,d){
+    var t=w.__tl={_q:[],token:'YOUR_TOKEN_HERE'};
+    ['init','identify','reset','startReplay','stopReplay','optOut','optIn','destroy']
+      .forEach(function(m){t[m]=function(){t._q.push([m,[].slice.call(arguments)])}});
+    var s=d.createElement('script');s.async=!0;
+    s.src='https://cdn.tracelit.app/t.full.js';d.head.appendChild(s);
+  }(window,document);
+</script>
+```
+
+---
+
+## What's next?
+
+<Columns cols={2}>
+  <Card title="Identify users" icon="user" href="/tracking/identify-users">
+    Link sessions to real users after login.
+  </Card>
+  <Card title="Feature tagging" icon="tag" href="/features/feature-tagging">
+    Mark flows like checkout or onboarding in replays.
+  </Card>
+</Columns>

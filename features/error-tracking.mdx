@@ -1,0 +1,106 @@
+---
+title: "Error tracking"
+description: "Automatically capture JavaScript errors, unhandled promise rejections, failed API calls, broken resources, and slow network requests — each linked to its session replay."
+icon: "triangle-exclamation"
+iconType: "duotone"
+---
+
+Tracelit catches errors automatically the moment you install the tracker. No configuration needed. Every error appears in your dashboard with the full context: what happened, when, which user, and a one-click link to the session replay at the exact moment the error occurred.
+
+<img
+  src="/images/error-tracking-list.png"
+  alt="Tracelit dashboard error tracking view showing a list of errors with session replay links"
+  className="rounded-lg"
+/>
+
+---
+
+## What Tracelit catches
+
+| Error type | Example |
+| --- | --- |
+| `runtime` | Uncaught `TypeError`, `ReferenceError`, any thrown exception |
+| `promise` | Unhandled `Promise.reject()` |
+| `api` | Fetch or XHR returning 4xx / 5xx |
+| `api_slow` | Any request taking longer than 3 seconds |
+| `api_network` | Fetch / XHR that fails to connect entirely |
+| `graphql` | GraphQL 200 response with an `errors` array in the body |
+| `console_error` | Anything logged with `console.error()` (opt-in) |
+| `resource` | Broken images, missing fonts, failed script loads |
+| `network_offline` | Browser goes offline mid-session |
+| `websocket` | WebSocket connection failures or abnormal closure |
+| `long_task` | Main thread blocked 150ms+ (with source attribution) |
+| `memory` | Device heap approaching limit (Chrome only) |
+
+---
+
+## Capture `console.error` (opt-in)
+
+By default, `console.error` calls are not sent to Tracelit. Enable it with one option:
+
+```ts
+import { init } from '@tracelit/tracker'
+
+init({
+  token: 'YOUR_TOKEN_HERE',
+  monitorConsole: true   // capture console.error and console.warn
+})
+```
+
+<Warning>
+  Only enable this if you're intentional about what gets logged with `console.error`. Avoid logging sensitive data — treat it as if it's always visible.
+</Warning>
+
+---
+
+## View errors in the dashboard
+
+<img
+  src="/images/error-tracking-detail.png"
+  alt="Tracelit error detail page showing stack trace, frequency chart, and link to session replay"
+  className="rounded-lg"
+/>
+
+From the **Errors** tab in your dashboard you can:
+
+- See error frequency over time (how often, how many users affected)
+- Filter by error type, page, or user
+- Click any error to see the full stack trace
+- Click **Watch session** to open the replay and jump to the exact moment the error fired
+
+---
+
+## Jump from error to replay
+
+This is one of the most powerful things about having analytics, replay, and error tracking in one tool. When you see an error, you don't have to guess what the user was doing. You watch it.
+
+<img
+  src="/images/error-to-replay.png"
+  alt="Tracelit replay player at the moment a JavaScript error occurred, showing the error in the event log"
+  className="rounded-lg"
+/>
+
+The replay player highlights the error event in the timeline so you can see the user's actions that led up to it.
+
+---
+
+## Debug mode
+
+During development, turn on `debug: true` to see every captured event — including errors — logged to the browser console:
+
+```ts
+import { init } from '@tracelit/tracker'
+
+init({
+  token: 'YOUR_TOKEN_HERE',
+  debug: true   // remove before going to production
+})
+```
+
+---
+
+## No extra setup needed
+
+Every error type in the table above is captured automatically. Tracelit monkey-patches `fetch`, `XMLHttpRequest`, `history.pushState`, `WebSocket`, and `console.error` (if enabled) to intercept failures at the source.
+
+When you call `destroy()`, all patches are cleanly removed and the originals are restored.

@@ -1,0 +1,75 @@
+---
+title: "Vue 3"
+description: "Install Tracelit in a Vue 3 project. Works with Vite, Nuxt, and any Vue 3 setup. Automatic SPA route tracking included."
+icon: "vuejs"
+iconType: "duotone"
+---
+
+<img src="/images/vuejs.svg" alt="Vue" style={{ width: '40px', marginBottom: '4px' }} />
+
+```bash
+npm install @tracelit/tracker
+```
+
+Call `init()` before mounting your app in `main.ts`:
+
+```ts
+// src/main.ts
+import { createApp } from 'vue'
+import { init } from '@tracelit/tracker'
+import App from './App.vue'
+
+init({ token: 'YOUR_TOKEN_HERE' })
+createApp(App).mount('#app')
+```
+
+Tracelit detects route changes automatically via `history.pushState` — Vue Router works out of the box with no extra config.
+
+---
+
+## Adding user identity
+
+Call `identify()` after your auth state resolves — for example, inside a composable or watcher:
+
+```ts
+// composables/useTracelitIdentity.ts
+import { watch } from 'vue'
+import { identify, reset } from '@tracelit/tracker'
+import { useAuth } from '@/composables/useAuth'
+
+export function useTracelitIdentity() {
+  const { user } = useAuth()
+
+  watch(user, (u) => {
+    if (u) identify(u.id, { email: u.email, plan: u.plan })
+    else reset()
+  }, { immediate: true })
+}
+```
+
+Then call it in your root `App.vue`:
+
+```vue
+<!-- App.vue -->
+<script setup>
+import { useTracelitIdentity } from '@/composables/useTracelitIdentity'
+useTracelitIdentity()
+</script>
+
+<template>
+  <RouterView />
+</template>
+```
+
+---
+
+## What's next?
+
+<Columns cols={2}>
+  <Card title="Identify users" icon="user" href="/tracking/identify-users">
+    Full guide to linking sessions to real users.
+  </Card>
+  <Card title="Feature tagging" icon="tag" href="/features/feature-tagging">
+    Tag flows in session replays.
+  </Card>
+</Columns>

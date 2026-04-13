@@ -1,0 +1,85 @@
+---
+title: "Heatmaps & clicks"
+description: "Visualise click density, rage clicks, scroll depth, and form drop-off overlaid directly on your pages. Understand user behaviour without watching every recording."
+icon: "fire-flame-curved"
+iconType: "duotone"
+---
+
+Heatmaps give you a visual summary of user behaviour across all sessions on a page. Instead of watching individual replays, you see the aggregate: the hottest spots, the ignored areas, and the scroll cutoff point where most users stop reading.
+
+<img
+  src="/images/heatmap-overview.png"
+  alt="Tracelit heatmap view showing click density overlaid on a landing page, with a scroll depth bar on the right"
+  className="rounded-lg"
+/>
+
+---
+
+## What's tracked
+
+### Click heatmaps
+
+Every click is recorded (element, coordinates, timestamp, session). The heatmap view layers those clicks on top of a screenshot of your page, colour-coded from cool (few clicks) to hot (many clicks).
+
+Use this to answer:
+- Which CTA is actually getting clicked?
+- Are users clicking things that aren't links?
+- Is my primary button being ignored?
+
+### Rage clicks
+
+A rage click is when a user rapidly clicks the same spot multiple times — usually a sign of frustration. These are flagged separately in the dashboard so you can filter for them and watch the session to understand what's broken or confusing.
+
+<img
+  src="/images/rage-clicks.png"
+  alt="Tracelit dashboard showing rage click events highlighted in red on a session replay timeline"
+  className="rounded-lg"
+/>
+
+### Scroll depth
+
+Tracelit tracks how far down the page each visitor scrolled. The aggregate is shown as a gradient bar on the right side of the heatmap — from 100% at the top (everyone sees this) down to 0% at the bottom (almost no one reaches this).
+
+Use this to:
+- Decide whether to move important content higher up
+- Check whether your above-the-fold CTA is actually in the fold
+- Understand if users are reading the full page before converting
+
+---
+
+## Viewing heatmaps
+
+<img
+  src="/images/heatmap-page-selector.png"
+  alt="Tracelit heatmap page selector showing a list of pages with session counts"
+  className="rounded-lg"
+/>
+
+In the dashboard, go to **Heatmaps** and select any page. Tracelit builds the heatmap from all sessions on that URL. You can:
+
+- Filter by date range
+- Filter by device type (desktop / mobile / tablet)
+- Switch between click, move, and scroll views
+- Click any hotspot to see the individual click events and jump to their sessions
+
+---
+
+## Form interaction tracking
+
+Tracelit also tracks which form fields users interact with and where they abandon the form — which fields get filled, which get skipped, and which cause drop-off.
+
+<Warning>
+  Tracelit **never** captures field values. Only interaction events (focus, blur, change) are recorded. Passwords are always blocked at the DOM level.
+</Warning>
+
+<img
+  src="/images/form-analytics.png"
+  alt="Tracelit form analytics showing a funnel of which fields were completed and where users dropped off"
+  className="rounded-lg"
+/>
+
+---
+
+## Zero config
+
+Click tracking, rage click detection, scroll depth, and form interaction tracking are all on by default. No setup required beyond installing the tracker.

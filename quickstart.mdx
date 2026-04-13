@@ -1,80 +1,105 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Add Tracelit to any website in under 5 minutes using a single script tag. No build step, no npm, no configuration required."
+icon: "rocket"
+iconType: "duotone"
 ---
 
-## Get started in three steps
+This guide uses the script tag approach — the fastest way to get Tracelit running on any site, including plain HTML, WordPress, Webflow, Shopify, or any CMS.
 
-Get your documentation site running locally and make your first customization.
+If you're using React, Next.js, Vue, or another framework, see the [framework installation guide](/installation) after reading this.
 
-### Step 1: Set up your local environment
+---
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+## Step 1 — Get your token
 
-### Step 2: Deploy your changes
+Your site token is found in the Tracelit dashboard under **Settings → Site Token**.
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+<img
+  src="/images/dashboard-token.png"
+  alt="Tracelit dashboard Settings page showing the Site Token field"
+  className="rounded-lg"
+/>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Don't have an account yet? Sign up at [tracelit.io](https://tracelit.io) — it's free to get started.
 </Note>
+
+---
+
+## Step 2 — Paste the script
+
+Copy this snippet and paste it inside the `<head>` tag of every page on your site. Replace `YOUR_TOKEN_HERE` with the token you copied.
+
+```html
+<script>
+  !function(w,d){
+    var t=w.__tl={_q:[],token:'YOUR_TOKEN_HERE'};
+    ['init','identify','reset','startReplay','stopReplay','optOut','optIn','destroy']
+      .forEach(function(m){t[m]=function(){t._q.push([m,[].slice.call(arguments)])}});
+    var s=d.createElement('script');s.async=!0;
+    s.src='https://cdn.tracelit.io/t.js';d.head.appendChild(s);
+  }(window,document);
+</script>
+```
+
+<Tip>
+  The snippet loads asynchronously — it never slows down your page. Any API calls you make (like `identify`) before the SDK finishes loading are queued and replayed automatically.
+</Tip>
+
+---
+
+## Step 3 — Verify it's working
+
+Open your site in a browser, click around for a few seconds, then head to your Tracelit dashboard.
+
+<img
+  src="/images/dashboard-first-session.png"
+  alt="Tracelit dashboard showing the first session recorded after installing the script"
+  className="rounded-lg"
+/>
+
+You should see:
+
+- A live visitor appear under **Live Visitors**
+- A new session appear in **Sessions** within a few seconds
+- Page views and clicks populating automatically
+
+<Check>
+  If you see data appearing — you're done. Tracelit is now capturing page views, clicks, scroll depth, session replays, heatmaps, JS errors, API errors, and performance metrics automatically.
+</Check>
+
+---
+
+## What's next?
+
+<Columns cols={2}>
+  <Card
+    title="Using a framework?"
+    icon="npm"
+    href="/installation"
+  >
+    See the React, Next.js, Vue, and other framework setup guides.
+  </Card>
+  <Card
+    title="Identify your users"
+    icon="user"
+    href="/tracking/identify-users"
+  >
+    Link sessions to real users with one line of code.
+  </Card>
+  <Card
+    title="Tag features in replay"
+    icon="tag"
+    href="/features/feature-tagging"
+  >
+    Mark specific flows (checkout, onboarding) so you can filter and jump to them.
+  </Card>
+  <Card
+    title="Understand your errors"
+    icon="triangle-exclamation"
+    href="/features/error-tracking"
+  >
+    Every error is linked to its session replay — see exactly what the user saw.
+  </Card>
+</Columns>

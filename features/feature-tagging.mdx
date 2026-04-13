@@ -1,0 +1,145 @@
+---
+title: "Feature tagging"
+description: "Annotate session replays with named feature markers — checkout, onboarding, payment. Filter sessions by feature and jump to the exact timestamp it started."
+icon: "tag"
+iconType: "duotone"
+---
+
+Feature tagging lets you annotate session replays with named markers. When a user hits your checkout flow, onboarding wizard, or any other important flow, you call `startReplay('checkout')` — and in the dashboard you'll see every session tagged with `checkout`, with a clickable timestamp that jumps the player to that exact moment.
+
+<img
+  src="/images/feature-tags-dashboard.png"
+  alt="Tracelit dashboard showing sessions tagged with 'checkout' and 'onboarding' feature labels"
+  className="rounded-lg"
+/>
+
+---
+
+## Basic usage
+
+```ts
+import { startReplay, stopReplay } from '@tracelit/tracker'
+
+// Mark the start of a feature
+startReplay('checkout')
+
+// Mark the end
+stopReplay('checkout')
+```
+
+You can use any string as a feature name — keep them short and descriptive:
+
+```ts
+startReplay('onboarding')
+startReplay('payment-flow')
+startReplay('settings-update')
+startReplay('trial-upgrade')
+```
+
+---
+
+## React example — tag a component lifecycle
+
+The most natural place to call these in React is inside a `useEffect` in the component that represents the flow:
+
+```tsx
+import { useEffect } from 'react'
+import { startReplay, stopReplay } from '@tracelit/tracker'
+
+function CheckoutFlow() {
+  useEffect(() => {
+    startReplay('checkout')
+    return () => stopReplay('checkout')  // called when user leaves
+  }, [])
+
+  return <CheckoutSteps />
+}
+```
+
+When the user mounts `CheckoutFlow`, a `checkout` tag appears in the session. When they leave (or the component unmounts), the tag closes. In the dashboard you'll see the exact duration they spent in checkout.
+
+---
+
+## Next.js example — tag a page or route group
+
+```tsx
+// app/checkout/layout.tsx
+'use client'
+import { useEffect } from 'react'
+import { startReplay, stopReplay } from '@tracelit/tracker'
+
+export default function CheckoutLayout({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    startReplay('checkout')
+    return () => stopReplay('checkout')
+  }, [])
+  return <>{children}</>
+}
+```
+
+---
+
+## Multiple concurrent tags
+
+You can have multiple active tags at once — Tracelit stacks them:
+
+```ts
+startReplay('checkout')
+startReplay('upsell-offer')   // user sees an upsell mid-checkout
+
+// Later...
+stopReplay('upsell-offer')    // upsell dismissed, still in checkout
+stopReplay('checkout')        // checkout complete
+```
+
+Check what's currently active:
+
+```ts
+import { getActiveFeatures } from '@tracelit/tracker'
+
+console.log(getActiveFeatures())
+// → ['checkout', 'upsell-offer']
+```
+
+---
+
+## Trigger mode + feature tagging
+
+If you set `replay.mode: 'trigger'`, recording **only starts** when you call `startReplay()`. This is useful on high-traffic sites where you only want recordings of specific flows:
+
+```ts
+import { init, startReplay, stopReplay } from '@tracelit/tracker'
+
+init({
+  token: 'YOUR_TOKEN_HERE',
+  replay: { mode: 'trigger' }  // record nothing until startReplay() is called
+})
+
+// Somewhere in your checkout component:
+startReplay('checkout')    // recording begins here
+stopReplay('checkout')     // recording pauses here
+```
+
+If all features are stopped, the pipeline flushes and recording pauses until the next `startReplay()` call.
+
+---
+
+## How it looks in the dashboard
+
+<img
+  src="/images/feature-tag-player.png"
+  alt="Tracelit replay player showing a feature tag marker on the timeline and a jump-to button"
+  className="rounded-lg"
+/>
+
+In the sessions list, every session that called `startReplay('checkout')` shows a **checkout** chip. Click the chip to open the replay and jump to the exact second the feature started. The timeline also shows a visual marker at the feature start and end points.
+
+---
+
+## API reference
+
+| Function | Description |
+| --- | --- |
+| `startReplay(feature?)` | Start a named feature segment. Injects a `tl:feature_start` marker into the recording. |
+| `stopReplay(feature?)` | End a named feature segment. Injects a `tl:feature_end` marker. |
+| `getActiveFeatures()` | Returns an array of currently active feature tag strings. |

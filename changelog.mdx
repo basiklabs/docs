@@ -1,0 +1,94 @@
+---
+title: "Changelog"
+description: "Every release of @tracelit/tracker — new features, improvements, and fixes."
+icon: "clock-rotate-left"
+iconType: "duotone"
+---
+
+<Note>
+  Install the latest version with `npm install @tracelit/tracker@latest` or update the CDN snippet to use `https://cdn.tracelit.io/t.js` (always points to latest).
+</Note>
+
+---
+
+## v1.2.6 — Apr 7, 2026
+
+<Badge>Latest</Badge>
+
+**Improvements**
+
+- Reduced ESM bundle size by ~15% through dead-code elimination
+- Improved rrweb snapshot fidelity for dynamically rendered Shadow DOM components
+- More precise `api_slow` threshold reporting — now includes the full request URL in the error payload
+
+**Fixes**
+
+- Fixed an edge case where `stopReplay()` called before `startReplay()` would throw a silent error in trigger mode
+- Fixed `isOptedOut()` returning stale values after `optIn()` was called in the same page session
+
+---
+
+## v1.2.5 — Apr 5, 2026
+
+**New**
+
+- `getActiveFeatures()` — returns the list of currently active feature tag strings ([docs](/features/feature-tagging))
+- `monitorConsole` option — opt in to capturing `console.error` and `console.warn` as error events ([docs](/features/error-tracking))
+
+**Improvements**
+
+- `identify()` now emits a visual marker in the replay timeline at the exact moment it's called
+- Debug mode logs now include a timestamp and event type prefix for easier filtering
+
+---
+
+## v1.2.1 — Apr 2, 2026
+
+**New**
+
+- `sampleRate` replay option — record a fraction of sessions (e.g. `0.1` = 10%) to reduce data volume on high-traffic sites ([docs](/configuration/reference))
+- `blocklist` now supports regex patterns in addition to path substrings
+
+**Fixes**
+
+- Fixed `history.pushState` interception not firing on some Next.js 15 App Router navigations
+- Fixed memory warning events (`memory` error type) not emitting on Chrome 124+
+
+---
+
+## v1.0.13 — Mar 28, 2026
+
+**New**
+
+- `replay.mode: 'trigger'` — recording only starts when `startReplay()` is called, perfect for high-traffic sites that only need recordings of specific flows ([docs](/features/session-replay))
+- `fullSnapshotIntervalMs` option to control full DOM snapshot frequency
+
+**Improvements**
+
+- `destroy()` now restores all monkey-patched globals (`fetch`, `XMLHttpRequest`, `history.pushState`, `WebSocket`, `console.error`) to their originals
+- Improved `long_task` source attribution — now includes component stack in supported browsers
+
+---
+
+## v1.0.0 — Mar 16, 2026
+
+**Initial release**
+
+Tracelit tracker is live. Everything ships on day one:
+
+- Session replay powered by rrweb (< 20 KB gzipped CDN script)
+- Heatmaps and click tracking
+- Rage click detection
+- Scroll depth tracking
+- JavaScript error tracking (`runtime`, `promise`, `resource`)
+- API error tracking (`api`, `api_slow`, `api_network`, `graphql`)
+- Performance metrics (TTFB, LCP, FCP, page load)
+- Form interaction tracking (no values, ever)
+- Live visitor count
+- User identification via `identify()`
+- Session feature tagging via `startReplay()` / `stopReplay()`
+- Privacy controls: `optOut()`, `optIn()`, `isOptedOut()`, `tl-block`, `tl-ignore`
+- Do Not Track respected
+- No cookies, no PII, SSR-safe
+- Full TypeScript types
+- React, Next.js, Vue, Svelte, Angular, and plain HTML support

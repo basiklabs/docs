@@ -1,0 +1,69 @@
+---
+title: "Svelte / SvelteKit"
+description: "Install Tracelit in a Svelte or SvelteKit project using onMount in the root layout. SSR-safe and automatic route tracking included."
+icon: "js"
+iconType: "duotone"
+---
+
+<img src="/images/svelte.svg" alt="Svelte" style={{ width: '40px', marginBottom: '4px' }} />
+
+```bash
+npm install @tracelit/tracker
+```
+
+Call `init()` inside `onMount` in your root layout so it only runs in the browser:
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script>
+  import { onMount } from 'svelte'
+  import { init } from '@tracelit/tracker'
+
+  onMount(() => init({ token: 'YOUR_TOKEN_HERE' }))
+</script>
+
+<slot />
+```
+
+<Note>
+  `onMount` only runs on the client, so `init()` is never called during SSR. No extra guard needed.
+</Note>
+
+---
+
+## Adding user identity
+
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script>
+  import { onMount } from 'svelte'
+  import { init, identify, reset } from '@tracelit/tracker'
+  export let data  // from +layout.server.ts
+
+  onMount(() => {
+    init({ token: 'YOUR_TOKEN_HERE' })
+    if (data.user) {
+      identify(data.user.id, { email: data.user.email, plan: data.user.plan })
+    }
+  })
+
+  // React to auth changes
+  $: if (data.user) identify(data.user.id, { email: data.user.email })
+  $: if (!data.user) reset()
+</script>
+
+<slot />
+```
+
+---
+
+## What's next?
+
+<Columns cols={2}>
+  <Card title="Identify users" icon="user" href="/tracking/identify-users">
+    Full guide to linking sessions to real users.
+  </Card>
+  <Card title="Feature tagging" icon="tag" href="/features/feature-tagging">
+    Tag flows in session replays.
+  </Card>
+</Columns>

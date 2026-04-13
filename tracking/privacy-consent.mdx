@@ -1,0 +1,153 @@
+---
+title: "Privacy & consent"
+description: "Implement opt-out and opt-in tracking consent, understand Tracelit's privacy defaults — no cookies, no PII, Do Not Track respected — and GDPR compliance guidance."
+icon: "shield-check"
+iconType: "duotone"
+---
+
+Tracelit is designed privacy-first by default. This page covers what is and isn't tracked, how to let users opt out, and what you need to know for GDPR and similar regulations.
+
+---
+
+## Privacy defaults
+
+You get all of this without any configuration:
+
+| What | Default behaviour |
+| --- | --- |
+| **Cookies** | Never used. Session IDs live in `sessionStorage`, visitor IDs in `localStorage`. |
+| **Form values** | Never captured. Only interaction events (focus, blur, change) are recorded. |
+| **Passwords** | Always blocked at the DOM level — can't be overridden. |
+| **PII** | Nothing is inferred. Emails, names, and card numbers are never captured automatically. |
+| **`identify()`** | Completely opt-in — Tracelit only knows who a user is if you call `identify()`. |
+| **Do Not Track** | If `navigator.doNotTrack === "1"`, replay and heatmaps are disabled automatically. |
+| **IP addresses** | Used to derive country/city for analytics, then discarded — never stored. |
+
+---
+
+## Opt users out
+
+If your app has a cookie consent banner or privacy settings page, use `optOut()` to stop all tracking when a user declines:
+
+```ts
+import { optOut } from '@tracelit/tracker'
+
+// Call when user clicks "Decline" or turns off tracking in your settings
+optOut()
+```
+
+`optOut()` does two things immediately:
+1. Stops all event capture — no more data is sent
+2. Persists the opt-out preference in `localStorage`
+
+On the next page load, tracking will not start at all. The user won't be tracked until they opt back in.
+
+---
+
+## Opt users back in
+
+```ts
+import { optIn } from '@tracelit/tracker'
+
+// Call when user clicks "Accept" or re-enables tracking
+optIn()
+```
+
+`optIn()` clears the opt-out flag. Tracking resumes on the next page load.
+
+---
+
+## Check opt-out status
+
+Use this to show or hide consent UI based on whether the user has already opted out:
+
+```ts
+import { isOptedOut } from '@tracelit/tracker'
+
+if (isOptedOut()) {
+  // Don't show the consent banner — user already opted out
+}
+```
+
+---
+
+## Full consent flow example
+
+```ts
+import { optOut, optIn, isOptedOut } from '@tracelit/tracker'
+
+function ConsentBanner() {
+  if (isOptedOut()) return null  // already declined, no need to ask again
+
+  return (
+    <div>
+      <p>We use Tracelit to improve your experience. No cookies, no personal data.</p>
+      <button onClick={() => optIn()}>Accept</button>
+      <button onClick={() => optOut()}>Decline</button>
+    </div>
+  )
+}
+```
+
+---
+
+## Block elements from replay
+
+If there are specific elements on your page that should never appear in session recordings, add the `tl-block` class:
+
+```html
+<!-- This element is replaced with a grey placeholder in all recordings -->
+<div class="tl-block">
+  Sensitive content here
+</div>
+```
+
+To exclude an element from click and interaction tracking (but still show it in the replay):
+
+```html
+<button class="tl-ignore">Not tracked</button>
+```
+
+---
+
+## Destroy the tracker
+
+Call `destroy()` to completely remove Tracelit from the page — all event listeners are removed, all monkey-patched globals are restored, all timers are cancelled, and any buffered events are flushed:
+
+```ts
+import { destroy } from '@tracelit/tracker'
+
+destroy()
+```
+
+This is useful in test teardown, when a user deletes their account, or when you need to fully remove tracking during the session (as opposed to just calling `optOut()` which persists across page loads).
+
+---
+
+## GDPR summary
+
+<AccordionGroup>
+  <Accordion title="Does Tracelit require a cookie consent banner?">
+    Tracelit doesn't use cookies — so technically no cookie consent is required. However, session replay and analytics may still fall under GDPR's broader definition of personal data processing. We recommend a simple consent flow using `optOut()` / `optIn()` for EU users to be safe.
+  </Accordion>
+  <Accordion title="How do I handle user deletion requests?">
+    Delete the user's sessions and data via the Tracelit dashboard. Also call `reset()` on the client when the user logs out so no future sessions are linked to them on that device.
+  </Accordion>
+  <Accordion title="Can I use Tracelit without identify() and stay fully anonymous?">
+    Yes. If you never call `identify()`, all sessions are anonymous. Tracelit still tracks sessions using a random ID stored in `localStorage` — but there's no way to link that ID to a real person unless you call `identify()`.
+  </Accordion>
+  <Accordion title="Is the session replay data processed in the EU?">
+    Check the Tracelit dashboard or contact support at lab@basik.tech for current data residency options.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## API reference
+
+| Function | Description |
+| --- | --- |
+| `optOut()` | Stop all tracking and persist the preference. |
+| `optIn()` | Clear the opt-out flag. Tracking resumes on next page load. |
+| `isOptedOut()` | Returns `true` if the user has opted out. |
+| `destroy()` | Completely remove Tracelit from the current page session. |

@@ -1,0 +1,160 @@
+---
+title: "Session replay"
+description: "Watch real recordings of what visitors saw and did on your site, second by second. Filter by feature, user, error, or page. Jump to any moment instantly."
+icon: "video"
+iconType: "duotone"
+---
+
+Session replay records the DOM state of your pages so you can play back any session like a video. You see exactly what the user saw: every scroll, click, hover, text input (never the values), and page change.
+
+<img
+  src="/images/session-replay-player.png"
+  alt="Tracelit session replay player showing a user browsing through a checkout flow"
+  className="rounded-lg"
+/>
+
+---
+
+## How it works
+
+Tracelit uses [rrweb](https://github.com/rrweb-io/rrweb) under the hood to record a compressed snapshot of your DOM and the mutations that happen to it over time. This is streamed to Tracelit's servers in the background during the session.
+
+The replay player in your dashboard reconstructs those snapshots and plays them back frame by frame — no actual screen capture, no video file, and no performance hit on your users.
+
+<Note>
+  The rrweb script loads 1.5 seconds after `window.load`, not at page load — so replay never affects your performance metrics.
+</Note>
+
+---
+
+## Recording modes
+
+Control how much gets recorded with the `replay.mode` option in your `init()` config:
+
+| Mode | What it does |
+| --- | --- |
+| `'always'` | Record every session from start to finish (default) |
+| `'trigger'` | Only record when you call `startReplay()` — useful for high-traffic sites |
+| `'off'` | Disable replay entirely |
+
+```ts
+import { init } from '@tracelit/tracker'
+
+// Always record (default)
+init({ token: 'YOUR_TOKEN_HERE' })
+
+// Only record specific flows
+init({
+  token: 'YOUR_TOKEN_HERE',
+  replay: { mode: 'trigger' }
+})
+
+// Disable replay
+init({
+  token: 'YOUR_TOKEN_HERE',
+  replay: { mode: 'off' }
+})
+```
+
+---
+
+## Block sensitive content
+
+Some elements should never appear in replays — forms with personal data, admin panels, payment widgets.
+
+**Block an element** — replaced with a placeholder box in the recording:
+
+```html
+<div class="tl-block">
+  <!-- This content is never recorded -->
+  <input type="text" placeholder="Credit card number" />
+</div>
+```
+
+**Ignore an element** — excluded from click and interaction tracking, but still visible in replay:
+
+```html
+<button class="tl-ignore">This button won't track clicks</button>
+```
+
+<Note>
+  All `<input type="password">` fields are **always** blocked at the DOM level, automatically. You don't need to add `tl-block` to password fields.
+</Note>
+
+---
+
+## Block entire pages
+
+Use the `blocklist` option to pause recording on specific paths — for example, an admin panel or a page with sensitive health information:
+
+```ts
+init({
+  token: 'YOUR_TOKEN_HERE',
+  replay: {
+    blocklist: ['/admin', '/settings/billing', '/health-records']
+  }
+})
+```
+
+Recording automatically resumes when the user navigates to a non-blocked page.
+
+---
+
+## Idle and duration limits
+
+By default, Tracelit stops recording if the user is inactive for 5 minutes, and cuts off any session at 45 minutes regardless. You can tune these:
+
+```ts
+init({
+  token: 'YOUR_TOKEN_HERE',
+  replay: {
+    idleTimeoutMs: 120000,   // pause after 2 minutes of inactivity
+    maxDurationMs: 1800000   // hard stop after 30 minutes
+  }
+})
+```
+
+---
+
+## Sample rate
+
+On high-traffic sites you may not need to record every session. Use `sampleRate` to record a fraction:
+
+```ts
+init({
+  token: 'YOUR_TOKEN_HERE',
+  replay: {
+    sampleRate: 0.25  // record 25% of sessions
+  }
+})
+```
+
+---
+
+## Viewing replays in the dashboard
+
+<img
+  src="/images/session-replay-list.png"
+  alt="Tracelit dashboard sessions list with replay thumbnails and filter controls"
+  className="rounded-lg"
+/>
+
+In the dashboard, every session in the **Sessions** list has a play button. Click it to open the replay player. From there you can:
+
+- Scrub through the timeline
+- Jump to specific events (clicks, errors, feature markers)
+- Speed up playback (2×, 4×, 8×)
+- See the event log alongside the replay
+- Filter sessions by feature tag, user, page, or error
+
+---
+
+## Next up
+
+<Card
+  title="Tag features in replay"
+  icon="tag"
+  href="/features/feature-tagging"
+>
+  Mark specific flows like checkout or onboarding so you can jump directly to them in any recording.
+</Card>

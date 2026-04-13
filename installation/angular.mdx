@@ -1,0 +1,73 @@
+---
+title: "Angular"
+description: "Install Tracelit in an Angular project by calling init() in AppComponent's ngOnInit lifecycle hook."
+icon: "angular"
+iconType: "duotone"
+---
+
+```bash
+npm install @tracelit/tracker
+```
+
+Call `init()` in `ngOnInit` of your root `AppComponent`:
+
+```ts
+// src/app/app.component.ts
+import { Component, OnInit } from '@angular/core'
+import { init } from '@tracelit/tracker'
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html'
+})
+export class AppComponent implements OnInit {
+  ngOnInit() {
+    init({ token: 'YOUR_TOKEN_HERE' })
+  }
+}
+```
+
+Tracelit detects Angular Router navigation automatically via `history.pushState` — no router hooks needed.
+
+---
+
+## Adding user identity
+
+Inject your auth service and call `identify()` once the user is resolved:
+
+```ts
+// src/app/app.component.ts
+import { Component, OnInit } from '@angular/core'
+import { init, identify, reset } from '@tracelit/tracker'
+import { AuthService } from './auth.service'
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html'
+})
+export class AppComponent implements OnInit {
+  constructor(private auth: AuthService) {}
+
+  ngOnInit() {
+    init({ token: 'YOUR_TOKEN_HERE' })
+
+    this.auth.user$.subscribe(user => {
+      if (user) identify(user.id, { email: user.email, plan: user.plan })
+      else reset()
+    })
+  }
+}
+```
+
+---
+
+## What's next?
+
+<Columns cols={2}>
+  <Card title="Identify users" icon="user" href="/tracking/identify-users">
+    Full guide to linking sessions to real users.
+  </Card>
+  <Card title="Feature tagging" icon="tag" href="/features/feature-tagging">
+    Tag flows in session replays.
+  </Card>
+</Columns>
