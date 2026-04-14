@@ -1,0 +1,74 @@
+---
+title: "AI resolution"
+description: "From production error to pull request in minutes. Tracelit's AI detects issues, finds root cause, writes a minimal fix, and opens a PR with confidence scoring."
+icon: "sparkles"
+iconType: "duotone"
+---
+
+AI resolution turns production errors into proposed fixes automatically. When something breaks, Tracelit captures full context (stack trace, impacted users, and linked replay), analyzes your code, writes a minimal patch, and opens a PR for review.
+
+<img
+  src="/images/ai-code.png"
+  alt="Tracelit AI resolution flow from error detection to pull request and optional auto-merge"
+  className="rounded-lg"
+/>
+
+---
+
+## How it works
+
+<Steps>
+  <Step title={<><Badge color="blue">Detection</Badge></>}>
+    Tracelit captures the error, stack trace, affected users, and linked session replay.
+  </Step>
+  <Step title={<><Badge color="purple">Analysis</Badge></>}>
+    AI reads the relevant code paths and pinpoints the likely root cause.
+  </Step>
+  <Step title={<><Badge color="green">The fix</Badge></>}>
+    Tracelit generates the smallest safe diff needed to resolve the issue.
+  </Step>
+  <Step title={<><Badge color="orange">Pull request</Badge></>}>
+    A PR opens with root-cause summary, exact diff, confidence score, and replay link.
+  </Step>
+  <Step title={<><Badge color="green">Auto-merge (optional)</Badge></>}>
+    If CI passes and confidence meets your threshold, Tracelit can auto-merge; otherwise it waits for your review.
+  </Step>
+</Steps>
+
+<Note>
+  Tracelit does not push directly to `main` by default. It opens a PR on a fresh branch first.
+</Note>
+
+<img
+  src="/images/ai-stage.png"
+  alt="Tracelit AI resolution flow from error detection to pull request and optional auto-merge"
+  className="rounded-lg"
+/>
+
+---
+
+## Why this is useful for vibe coders
+
+If you ship fast with tools like Lovable, Cursor, Bolt, Replit, or v0, debugging prod regressions can eat your time. AI resolution removes that loop by turning incidents into ready-to-review PRs quickly.
+
+---
+
+## Use this AI prompt
+
+```text
+Set up Tracelit AI resolution for my project.
+
+Requirements:
+1) Connect error tracking to GitHub PR workflow.
+2) Keep branch protection and CI checks enforced.
+3) Configure confidence threshold and auto-merge policy (default: manual review).
+4) Ensure every generated PR includes root cause summary + replay link.
+5) Show the exact setup steps and files changed.
+6) Provide a test plan: trigger one error and verify Detection → Analysis → PR.
+```
+
+---
+
+## Learn more
+
+For product details and examples of the full Detection → Analysis → Fix → PR flow, see the AI resolutions page: [Tracelit AI resolutions](https://tracelit.io/ai-resolutions).

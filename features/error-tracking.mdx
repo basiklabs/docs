@@ -8,7 +8,7 @@ iconType: "duotone"
 Tracelit catches errors automatically the moment you install the tracker. No configuration needed. Every error appears in your dashboard with the full context: what happened, when, which user, and a one-click link to the session replay at the exact moment the error occurred.
 
 <img
-  src="/images/error-tracking-list.png"
+  src="/images/error.png"
   alt="Tracelit dashboard error tracking view showing a list of errors with session replay links"
   className="rounded-lg"
 />
@@ -55,32 +55,12 @@ init({
 
 ## View errors in the dashboard
 
-<img
-  src="/images/error-tracking-detail.png"
-  alt="Tracelit error detail page showing stack trace, frequency chart, and link to session replay"
-  className="rounded-lg"
-/>
-
 From the **Errors** tab in your dashboard you can:
 
 - See error frequency over time (how often, how many users affected)
 - Filter by error type, page, or user
 - Click any error to see the full stack trace
 - Click **Watch session** to open the replay and jump to the exact moment the error fired
-
----
-
-## Jump from error to replay
-
-This is one of the most powerful things about having analytics, replay, and error tracking in one tool. When you see an error, you don't have to guess what the user was doing. You watch it.
-
-<img
-  src="/images/error-to-replay.png"
-  alt="Tracelit replay player at the moment a JavaScript error occurred, showing the error in the event log"
-  className="rounded-lg"
-/>
-
-The replay player highlights the error event in the timeline so you can see the user's actions that led up to it.
 
 ---
 
@@ -104,3 +84,19 @@ init({
 Every error type in the table above is captured automatically. Tracelit monkey-patches `fetch`, `XMLHttpRequest`, `history.pushState`, `WebSocket`, and `console.error` (if enabled) to intercept failures at the source.
 
 When you call `destroy()`, all patches are cleanly removed and the originals are restored.
+
+---
+
+## Use this AI prompt
+
+```text
+Set up Tracelit error tracking in my project and make it production-safe.
+
+Requirements:
+1) Initialize Tracelit with my token: YOUR_TOKEN_HERE.
+2) Enable monitorConsole only if needed and explain the tradeoff.
+3) Make sure runtime errors, API errors, and unhandled promises are captured.
+4) Add safe guidance so sensitive data is never logged to console.error.
+5) Keep edits minimal.
+6) Show changed files and explain how to test with one forced JS error and one failed API request.
+```

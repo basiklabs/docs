@@ -1,7 +1,7 @@
 /* Arcadia Display Font - For Headers */
 @font-face {
-    font-family: 'Graphik';
-    src: url('https://res.cloudinary.com/dvc4kia8l/raw/upload/v1752578408/Graphik-Regular_2_bzzwzc.ttf') format('truetype');
+    font-family: 'Aeonik';
+    src: url('https: //res.cloudinary.com/dvc4kia8l/raw/upload/v1776143367/Aeonik-Regular_n5uisd.ttf') format('truetype');
     font-weight: 100;
     font-style: normal;
     font-display: swap;
@@ -25,13 +25,13 @@
     font-display: swap;
 } */
 
-/* @font-face {
-    font-family: 'Graphik';
-    src: url('https://res.cloudinary.com/dvc4kia8l/raw/upload/v1752578408/Graphik-Regular_2_bzzwzc.ttf') format('truetype');
+@font-face {
+    font-family: 'Aeonik Bold';
+    src: url('https: //res.cloudinary.com/dvc4kia8l/raw/upload/v1776143367/Aeonik-Bold_qsmsr1.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
     font-display: swap;
-} */
+}
 
 
 /* Adjust body font size */
@@ -41,7 +41,7 @@ body {
     /* Dark mode body background */
     color: #f2f2f2;
     /* Light text color for readability */
-    /* font-family: 'Graphik', system-ui, sans-serif; */
+    font-family: 'Aeonik', system-ui, sans-serif;
 }
 
 /* Adjust headings */
@@ -51,7 +51,7 @@ h3,
 h4,
 h5,
 h6 {
-    /* font-family: 'Graphik', system-ui, sans-serif; */
+    font-family: 'Aeonik Bold', system-ui, sans-serif;
 }
 
 

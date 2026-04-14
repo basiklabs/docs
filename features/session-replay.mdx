@@ -8,7 +8,7 @@ iconType: "duotone"
 Session replay records the DOM state of your pages so you can play back any session like a video. You see exactly what the user saw: every scroll, click, hover, text input (never the values), and page change.
 
 <img
-  src="/images/session-replay-player.png"
+  src="/images/session-replay.png"
   alt="Tracelit session replay player showing a user browsing through a checkout flow"
   className="rounded-lg"
 />
@@ -17,12 +17,12 @@ Session replay records the DOM state of your pages so you can play back any sess
 
 ## How it works
 
-Tracelit uses [rrweb](https://github.com/rrweb-io/rrweb) under the hood to record a compressed snapshot of your DOM and the mutations that happen to it over time. This is streamed to Tracelit's servers in the background during the session.
+Tracelit uses an open-source replay engine under the hood to record a compressed snapshot of your DOM and the mutations that happen to it over time. This is streamed to Tracelit's servers in the background during the session.
 
 The replay player in your dashboard reconstructs those snapshots and plays them back frame by frame — no actual screen capture, no video file, and no performance hit on your users.
 
 <Note>
-  The rrweb script loads 1.5 seconds after `window.load`, not at page load — so replay never affects your performance metrics.
+  The replay engine loads 1.5 seconds after `window.load`, not at page load — so replay never affects your performance metrics.
 </Note>
 
 ---
@@ -131,21 +131,35 @@ init({
 
 ---
 
-## Viewing replays in the dashboard
+## Use this AI prompt
 
-<img
-  src="/images/session-replay-list.png"
-  alt="Tracelit dashboard sessions list with replay thumbnails and filter controls"
-  className="rounded-lg"
-/>
+```text
+Implement Tracelit session replay in my project.
 
-In the dashboard, every session in the **Sessions** list has a play button. Click it to open the replay player. From there you can:
+Requirements:
+1) Ensure Tracelit is initialized with my token: YOUR_TOKEN_HERE.
+2) Set replay mode to 'always' (or explain if 'trigger' is better for this project).
+3) Add blocklist paths for sensitive pages: /admin and /settings/billing.
+4) Keep password and sensitive form areas protected (use tl-block where needed).
+5) Make only minimal changes.
+6) Show me exactly which files changed.
+7) Give me a 30-second verification checklist in the Tracelit dashboard.
+```
 
-- Scrub through the timeline
-- Jump to specific events (clicks, errors, feature markers)
-- Speed up playback (2×, 4×, 8×)
-- See the event log alongside the replay
-- Filter sessions by feature tag, user, page, or error
+---
+
+## Live analytics inside session replay
+
+Live analytics is built into replay workflows. In the **Sessions** view, you can monitor active users and immediately jump into their replay timeline when needed.
+
+From session replay, you can:
+
+- See who is active right now
+- Open the exact session that triggered an error
+- Correlate behavior, errors, and feature tags in one timeline
+- Prioritize issues by affected-user count and replay evidence
+
+This keeps live monitoring and replay in one place, so you are not jumping between separate tools.
 
 ---
 

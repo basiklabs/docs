@@ -69,6 +69,31 @@ If your Content Security Policy blocks dynamically injected `<script>` tags, use
 
 ---
 
+## Install with AI (Bolt, Lovable, Replit)
+
+<Columns cols={3}>
+  <Card><img src="/images/bolt.svg" alt="Bolt logo" style={{ width: '100px' }} /></Card>
+  <Card><img src="/images/logoblack.svg" alt="Lovable logo" style={{ width: '100px' }} /></Card>
+  <Card><img src="/images/replit.svg" alt="Replit logo" style={{ width: '100px' }} /></Card>
+</Columns>
+
+```text
+Install Tracelit on my plain HTML site.
+Insert this exact script right before </head> and replace YOUR_TOKEN_HERE:
+<script>
+  !function(w,d){
+    var t=w.__tl={_q:[],token:'YOUR_TOKEN_HERE'};
+    ['init','identify','reset','startReplay','stopReplay','optOut','optIn','destroy']
+      .forEach(function(m){t[m]=function(){t._q.push([m,[].slice.call(arguments)])}});
+    var s=d.createElement('script');s.async=!0;
+    s.src='https://cdn.tracelit.io/t.js';d.head.appendChild(s);
+  }(window,document);
+</script>
+Then show changed files and a quick verification checklist.
+```
+
+---
+
 ## What's next?
 
 <Columns cols={2}>

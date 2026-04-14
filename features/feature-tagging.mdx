@@ -8,7 +8,7 @@ iconType: "duotone"
 Feature tagging lets you annotate session replays with named markers. When a user hits your checkout flow, onboarding wizard, or any other important flow, you call `startReplay('checkout')` — and in the dashboard you'll see every session tagged with `checkout`, with a clickable timestamp that jumps the player to that exact moment.
 
 <img
-  src="/images/feature-tags-dashboard.png"
+  src="/images/session-feedback.png"
   alt="Tracelit dashboard showing sessions tagged with 'checkout' and 'onboarding' feature labels"
   className="rounded-lg"
 />
@@ -121,19 +121,6 @@ stopReplay('checkout')     // recording pauses here
 ```
 
 If all features are stopped, the pipeline flushes and recording pauses until the next `startReplay()` call.
-
----
-
-## How it looks in the dashboard
-
-<img
-  src="/images/feature-tag-player.png"
-  alt="Tracelit replay player showing a feature tag marker on the timeline and a jump-to button"
-  className="rounded-lg"
-/>
-
-In the sessions list, every session that called `startReplay('checkout')` shows a **checkout** chip. Click the chip to open the replay and jump to the exact second the feature started. The timeline also shows a visual marker at the feature start and end points.
-
 ---
 
 ## API reference
@@ -143,3 +130,19 @@ In the sessions list, every session that called `startReplay('checkout')` shows 
 | `startReplay(feature?)` | Start a named feature segment. Injects a `tl:feature_start` marker into the recording. |
 | `stopReplay(feature?)` | End a named feature segment. Injects a `tl:feature_end` marker. |
 | `getActiveFeatures()` | Returns an array of currently active feature tag strings. |
+
+---
+
+## Use this AI prompt
+
+```text
+Add Tracelit feature tagging in my project.
+
+Requirements:
+1) Tag my main product flows with startReplay()/stopReplay(), including: onboarding, checkout, and settings-update.
+2) In React/Next components, start on mount and stop on unmount.
+3) Avoid duplicate tags and keep names consistent.
+4) Keep code changes minimal and production-safe.
+5) Show exactly which files you changed.
+6) Add a quick test plan for verifying tags appear in Tracelit replay.
+```

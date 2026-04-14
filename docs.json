@@ -3,9 +3,9 @@
   "theme": "aspen",
   "name": "Tracelit",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#ff5900",
+    "light": "#ff5900",
+    "dark": "#ff5900"
   },
   "favicon": "/favicon.svg",
   "customCss": "/style.css",
@@ -19,18 +19,13 @@
             "pages": [
               "index",
               "quickstart",
-              {
-                "group": "Framework installation",
-                "pages": [
-                  "installation/react",
-                  "installation/vue",
-                  "installation/angular",
-                  "installation/script-tag",
-                  "installation/svelte",
-                  "installation/nextjs-app-router",
-                  "installation/nextjs-pages-router"
-                ]
-              }
+              "installation/react",
+              "installation/vue",
+              "installation/angular",
+              "installation/script-tag",
+              "installation/svelte",
+              "installation/nextjs-app-router",
+              "installation/nextjs-pages-router"
             ]
           },
           {
@@ -39,8 +34,7 @@
               "features/session-replay",
               "features/feature-tagging",
               "features/error-tracking",
-              "features/heatmaps",
-              "features/live-visitors"
+              "features/ai-resolution"
             ]
           },
           {
@@ -88,6 +82,10 @@
       "label": "Go to dashboard",
       "href": "https://tracelit.io/app"
     }
+  },
+  "llms": {
+    "title": "Tracelit",
+    "description": "Session replay, heatmaps, error tracking, real-time visitors, and AI-powered alerts in one script under 20 KB. Zero config. No cookies. No PII."
   },
   "contextual": {
     "options": [

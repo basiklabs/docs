@@ -8,7 +8,7 @@ iconType: "duotone"
 By default, Tracelit tracks anonymous sessions. If you call `identify()` after a user logs in, every event from that point on (and future sessions on that device) will be linked to that user in your dashboard.
 
 <img
-  src="/images/identified-session.png"
+  src="/images/users.png"
   alt="Tracelit session replay player header showing an identified user with their ID, email, and plan traits"
   className="rounded-lg"
 />
@@ -190,6 +190,27 @@ If you're using the script tag approach, you can call `identify()` on the global
     In `debug` mode, the SDK warns you if a trait key looks sensitive — for example, `password`, `token`, `card`, or `ssn`. These warnings appear in the browser console.
   </Accordion>
 </AccordionGroup>
+
+---
+
+## Use this AI prompt
+
+```text
+Implement Tracelit user identification in my project.
+
+Requirements:
+1) Call identify(userId, traits) immediately after login/auth success.
+2) Call reset() on logout so future sessions are anonymous.
+3) Keep traits minimal and safe (no password, token, card, ssn, or secret values).
+4) If this is React/Next/Vue/Svelte/Angular, implement in the app root/auth flow.
+5) If this is plain HTML, use __tl.identify(...) after /api/me resolves.
+6) Make minimal, production-safe changes only.
+7) Show exactly which files changed and the final code snippets.
+8) Add a quick verification checklist for the Tracelit dashboard:
+   - User chip visible on session
+   - Identify marker visible in replay timeline
+   - reset() clears identity after logout
+```
 
 ---
 

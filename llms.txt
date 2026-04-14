@@ -1,0 +1,242 @@
+# Tracelit
+
+> Tracelit is a web analytics and session intelligence platform — session replay, heatmaps, error tracking, real-time visitors, and AI-powered alerts in one script under 20 KB. Zero configuration. No cookies. No PII captured by default.
+
+Tracelit is installed by adding a single script tag or the `@tracelit/tracker` npm package to any website. It works with React, Next.js (App Router and Pages Router), Vue 3, SvelteKit, Angular, and plain HTML. It is SSR-safe — `init()` is a no-op on the server. Calling it multiple times is also safe.
+
+The package is published at https://www.npmjs.com/package/@tracelit/tracker. The CDN script is at https://cdn.tracelit.app/t.js (< 20 KB gzipped). The dashboard is at https://tracelit.app.
+
+---
+
+## Installation
+
+### Script tag (any site, no build step)
+
+```html
+<script>
+  !function(w,d){
+    var t=w.__tl={_q:[],token:'YOUR_TOKEN_HERE'};
+    ['init','identify','reset','startReplay','stopReplay','optOut','optIn','destroy']
+      .forEach(function(m){t[m]=function(){t._q.push([m,[].slice.call(arguments)])}});
+    var s=d.createElement('script');s.async=!0;
+    s.src='https://cdn.tracelit.app/t.js';d.head.appendChild(s);
+  }(window,document);
+</script>
+```
+
+### npm (React, Next.js, Vue, Svelte, Angular)
+
+```bash
+npm install @tracelit/tracker
+```
+
+```ts
+import { init } from '@tracelit/tracker'
+init({ token: 'YOUR_TOKEN_HERE' })
+```
+
+The token is found in the Tracelit dashboard under **Settings → Site Token**.
+
+---
+
+## What Tracelit captures automatically (zero config)
+
+- Page views — including SPA route changes via history.pushState
+- Clicks, rage clicks, and scroll depth
+- Session replay (powered by rrweb, loaded 1.5s after window.load)
+- Heatmaps
+- JavaScript errors: runtime, unhandled promise rejections
+- API errors: 4xx/5xx fetch/XHR, slow requests (>3s), network failures, GraphQL errors
+- Performance metrics: TTFB, LCP, FCP, page load time
+- Form interactions (field values are never captured)
+- Live visitor count
+- Session summaries: bounce rate, time on site, scroll depth, pages per session
+- Long tasks (main thread blocked 150ms+)
+- WebSocket failures
+- Broken resources (images, fonts, scripts)
+
+---
+
+## API
+
+### `init(config)`
+
+```ts
+init({
+  token: string,             // required
+  debug?: boolean,           // log events to console (default: false)
+  monitorConsole?: boolean,  // capture console.error/warn (default: false)
+  apiBase?: string,          // override ingest URL
+  replay?: {
+    mode?: 'always' | 'trigger' | 'off',  // default: 'always'
+    blocklist?: string[],    // path patterns to pause recording
+    idleTimeoutMs?: number,  // default: 300000 (5 min)
+    maxDurationMs?: number,  // default: 2700000 (45 min)
+    sampleRate?: number,     // 0–1, default: 1
+    fullSnapshotIntervalMs?: number,  // default: 300000
+  }
+})
+```
+
+### `identify(userId, traits?)`
+
+Links the current session and all future sessions on this device to a known user. Call after login.
+
+```ts
+identify('user_abc123', { email: 'alice@example.com', plan: 'pro' })
+```
+
+### `reset()`
+
+Clears the stored user identity. Call on logout.
+
+### `startReplay(feature?)`
+
+Tags the current recording with a feature name and injects a timestamped marker into the rrweb stream. In the dashboard, sessions can be filtered by feature tag and the player jumps to the exact timestamp.
+
+```ts
+startReplay('checkout')
+startReplay('onboarding')
+```
+
+### `stopReplay(feature?)`
+
+Closes the named feature segment.
+
+### `getActiveFeatures()`
+
+Returns an array of currently active feature tag strings.
+
+### `optOut()`
+
+Stops all tracking and persists the opt-out preference in localStorage. No data is sent on future page loads.
+
+### `optIn()`
+
+Clears the opt-out flag. Tracking resumes on next page load.
+
+### `isOptedOut()`
+
+Returns `true` if the user has opted out.
+
+### `destroy()`
+
+Completely tears down the tracker — removes all event listeners, restores monkey-patched globals (fetch, XMLHttpRequest, history.pushState, WebSocket, console.error), cancels timers, stops rrweb, and flushes buffered events.
+
+---
+
+## Session replay modes
+
+| Mode | Behaviour |
+|------|-----------|
+| `'always'` | Record every session from start to finish (default) |
+| `'trigger'` | Only record between startReplay() and stopReplay() calls |
+| `'off'` | Disable replay entirely |
+
+## Privacy
+
+- No cookies — session IDs use sessionStorage, visitor IDs use localStorage
+- No form values — only focus/blur/change events are recorded
+- Passwords always blocked at DOM level (input[type=password])
+- identify() is opt-in — nothing is inferred
+- Do Not Track respected — if navigator.doNotTrack === "1", replay and heatmaps are disabled
+- Add class `tl-block` to any element to replace it with a placeholder in recordings
+- Add class `tl-ignore` to exclude an element from click/interaction tracking
+- optOut() / optIn() / isOptedOut() APIs for consent management
+
+## Error types captured
+
+| Type | Description |
+|------|-------------|
+| `runtime` | Uncaught TypeError, ReferenceError, any thrown exception |
+| `promise` | Unhandled Promise.reject() |
+| `api` | fetch/XHR returning 4xx or 5xx |
+| `api_slow` | Any request taking longer than 3 seconds |
+| `api_network` | fetch/XHR that fails to connect |
+| `graphql` | GraphQL 200 response with errors array |
+| `console_error` | console.error() calls (opt-in via monitorConsole: true) |
+| `resource` | Broken images, missing fonts, failed script loads |
+| `network_offline` | Browser goes offline mid-session |
+| `websocket` | WebSocket connection failures or abnormal closure |
+| `long_task` | Main thread blocked 150ms+ |
+| `memory` | Device heap approaching limit (Chrome only) |
+
+## Bundle sizes
+
+| File | Gzipped |
+|------|---------|
+| t.js (CDN, rrweb loaded separately) | < 20 KB |
+| t.full.js (CDN, rrweb bundled, for strict CSP) | ~60 KB |
+| @tracelit/tracker (ESM entry) | < 2 KB |
+
+---
+
+## Framework quick reference
+
+### React
+```ts
+// src/main.tsx
+import { init } from '@tracelit/tracker'
+init({ token: 'YOUR_TOKEN_HERE' })
+```
+
+### Next.js App Router
+```tsx
+// components/Tracelit.tsx
+'use client'
+import { useEffect } from 'react'
+import { init } from '@tracelit/tracker'
+export function Tracelit() {
+  useEffect(() => { init({ token: 'YOUR_TOKEN_HERE' }) }, [])
+  return null
+}
+// app/layout.tsx — add <Tracelit /> inside <body>
+```
+
+### Next.js Pages Router
+```tsx
+// pages/_app.tsx
+import { useEffect } from 'react'
+import { init } from '@tracelit/tracker'
+export default function App({ Component, pageProps }) {
+  useEffect(() => { init({ token: 'YOUR_TOKEN_HERE' }) }, [])
+  return <Component {...pageProps} />
+}
+```
+
+### Vue 3
+```ts
+// src/main.ts
+import { init } from '@tracelit/tracker'
+init({ token: 'YOUR_TOKEN_HERE' })
+```
+
+### SvelteKit
+```svelte
+<!-- src/routes/+layout.svelte -->
+<script>
+  import { onMount } from 'svelte'
+  import { init } from '@tracelit/tracker'
+  onMount(() => init({ token: 'YOUR_TOKEN_HERE' }))
+</script>
+<slot />
+```
+
+### Angular
+```ts
+// app.component.ts
+import { init } from '@tracelit/tracker'
+export class AppComponent implements OnInit {
+  ngOnInit() { init({ token: 'YOUR_TOKEN_HERE' }) }
+}
+```
+
+---
+
+## Links
+
+- [What is Tracelit](https://tracelit.app/docs): Product overview
+- [npm package](https://www.npmjs.com/package/@tracelit/tracker): @tracelit/tracker
+- [GitHub](https://github.com/basiklabs/tracelit-lib): Source and issues
+- [Dashboard](https://tracelit.app): Sign up and manage your sites
+- [Support](mailto:lab@basik.tech): lab@basik.tech

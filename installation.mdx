@@ -38,3 +38,35 @@ Pick your framework below. Replace `YOUR_TOKEN_HERE` with the token from your Tr
     <img src="/images/html5.svg" alt="HTML5" style={{ width: '36px', marginBottom: '8px' }} />
   </Card>
 </Columns>
+
+---
+
+## Install with AI (Bolt, Lovable, Replit)
+
+<Columns cols={3}>
+  <Card>
+    <img src="/images/bolt.svg" alt="Bolt logo" style={{ width: '28px', marginBottom: '8px' }} />
+  </Card>
+  <Card>
+    <img src="/images/logoblack.svg" alt="Lovable logo" style={{ width: '28px', marginBottom: '8px' }} />
+  </Card>
+  <Card>
+    <img src="/images/replit.svg" alt="Replit logo" style={{ width: '28px', marginBottom: '8px' }} />
+  </Card>
+</Columns>
+
+Copy this prompt into your coding assistant:
+
+```text
+Install Tracelit in my project.
+
+Framework: <react | next-app-router | next-pages-router | vue | sveltekit | angular | plain-html>
+Site token: YOUR_TOKEN_HERE
+
+Rules:
+1) If this project uses a JS framework, install @tracelit/tracker and initialize it in the app root/entry file.
+2) If this is plain HTML, add the Tracelit script right before </head>.
+3) Keep changes minimal and production-safe.
+4) Show exactly which file(s) you changed and the final code block(s).
+5) Give me a 30-second verification checklist in the Tracelit dashboard.
+```

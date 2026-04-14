@@ -16,7 +16,7 @@ If you're using React, Next.js, Vue, or another framework, see the [framework in
 Your site token is found in the Tracelit dashboard under **Settings → Site Token**.
 
 <img
-  src="/images/dashboard-token.png"
+  src="/images/script-tag.png"
   alt="Tracelit dashboard Settings page showing the Site Token field"
   className="rounded-lg"
 />
@@ -47,6 +47,37 @@ Copy this snippet and paste it inside the `<head>` tag of every page on your sit
   The snippet loads asynchronously — it never slows down your page. Any API calls you make (like `identify`) before the SDK finishes loading are queued and replayed automatically.
 </Tip>
 
+### Don't want to edit `<head>` yourself? Use this AI prompt
+
+If you're a vibe coder, copy this prompt into Cursor, ChatGPT, Claude, or any coding assistant:
+
+```text
+Install Tracelit on my project.
+
+Use this script snippet exactly and replace YOUR_TOKEN_HERE with my token:
+
+<script>
+  !function(w,d){
+    var t=w.__tl={_q:[],token:'YOUR_TOKEN_HERE'};
+    ['init','identify','reset','startReplay','stopReplay','optOut','optIn','destroy']
+      .forEach(function(m){t[m]=function(){t._q.push([m,[].slice.call(arguments)])}});
+    var s=d.createElement('script');s.async=!0;
+    s.src='https://cdn.tracelit.io/t.js';d.head.appendChild(s);
+  }(window,document);
+</script>
+
+Rules:
+1) If this is plain HTML, insert it right before </head>.
+2) If this is React/Next/Vue/Svelte/Angular, install @tracelit/tracker and initialize it in the app entry/root layout instead of manually editing raw HTML files.
+3) Make only the minimal changes needed.
+4) Show me exactly which file(s) you changed.
+5) Then explain how I can verify Tracelit is working in under 30 seconds.
+```
+
+<Note>
+  Replace `YOUR_TOKEN_HERE` before you run the prompt.
+</Note>
+
 ---
 
 ## Step 3 — Verify it's working
@@ -54,7 +85,7 @@ Copy this snippet and paste it inside the `<head>` tag of every page on your sit
 Open your site in a browser, click around for a few seconds, then head to your Tracelit dashboard.
 
 <img
-  src="/images/dashboard-first-session.png"
+  src="/images/detected.png"
   alt="Tracelit dashboard showing the first session recorded after installing the script"
   className="rounded-lg"
 />
