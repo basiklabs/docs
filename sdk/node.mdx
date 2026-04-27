@@ -1,0 +1,389 @@
+---
+title: "Node.js SDK"
+description: "Drop-in OpenTelemetry tracing, metrics, and logs for Node.js, Express, Fastify, NestJS, and every other Node framework you love."
+icon: "node-js"
+iconType: "brands"
+---
+
+<Note>
+  **Requirements:** Node.js ≥ 18.0.0 · TypeScript ≥ 5 (optional) · CJS and ESM both supported
+</Note>
+
+---
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @tracelit/sdk
+```
+
+```bash yarn
+yarn add @tracelit/sdk
+```
+
+```bash pnpm
+pnpm add @tracelit/sdk
+```
+</CodeGroup>
+
+---
+
+## Quick start
+
+<Warning>
+  The SDK **must** be initialised before any other modules that need auto-instrumentation (Express, Mongoose, Redis, etc.). Create a dedicated init file and import it as the very first line of your entry point.
+</Warning>
+
+<Steps>
+  <Step title="Create your Tracelit initializer">
+    ```typescript tracelit.ts
+    import Tracelit from "@tracelit/sdk";
+
+    Tracelit.configure((config) => {
+      config.apiKey      = process.env.TRACELIT_API_KEY;   // required
+      config.serviceName = "payments-api";                  // required
+      config.environment = process.env.NODE_ENV ?? "production";
+      config.sampleRate  = 1.0;
+    });
+
+    Tracelit.start();
+    ```
+  </Step>
+  <Step title="Import the initializer first in your entry point">
+    ```typescript server.ts
+    import "./tracelit"; // ← MUST be the very first import
+
+    import express from "express";
+
+    const app = express();
+    app.get("/", (_req, res) => res.send("Hello, Tracelit!"));
+    app.listen(3000);
+    ```
+  </Step>
+  <Step title="Set your environment variables">
+    ```bash .env
+    TRACELIT_API_KEY=tl_live_abc123
+    TRACELIT_SERVICE_NAME=payments-api
+    TRACELIT_ENVIRONMENT=production
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Configuration reference
+
+All options can be set in the `configure` callback **or** via environment variables.
+
+| Option | Env variable | Default | Description |
+|---|---|---|---|
+| `apiKey` | `TRACELIT_API_KEY` | — | **Required.** Your Tracelit ingest API key |
+| `serviceName` | `TRACELIT_SERVICE_NAME` | — | **Required.** Service name shown in Tracelit |
+| `environment` | `TRACELIT_ENVIRONMENT` | `"production"` | Deployment environment tag |
+| `endpoint` | `TRACELIT_ENDPOINT` | `https://ingest.tracelit.app` | Override only when self-hosting |
+| `sampleRate` | `TRACELIT_SAMPLE_RATE` | `1.0` | Sampling ratio `0.0`–`1.0`. Errors always export. |
+| `enabled` | `TRACELIT_ENABLED` | `true` | Set `false` to disable all telemetry in tests |
+| `resourceAttributes` | — | `{}` | Extra key/value pairs on every span, metric, and log |
+
+### Custom resource attributes
+
+```typescript
+Tracelit.configure((config) => {
+  config.apiKey      = process.env.TRACELIT_API_KEY;
+  config.serviceName = "orders-api";
+  config.resourceAttributes = {
+    "deployment.region": "us-east-1",
+    "team": "platform",
+  };
+});
+```
+
+---
+
+## Tracing
+
+### Manual spans
+
+`Tracelit.tracer` is a standard OpenTelemetry `Tracer` and supports the full OTel JS API.
+
+```typescript
+import Tracelit from "@tracelit/sdk";
+
+const result = await Tracelit.tracer.startActiveSpan("process_payment", async (span) => {
+  span.setAttribute("payment.id", payment.id);
+  span.setAttribute("payment.amount", String(amount));
+  span.setAttribute("payment.currency", currency);
+
+  try {
+    const result = await processPayment(payment);
+    span.setAttribute("payment.status", result.status);
+    return result;
+  } catch (err) {
+    span.recordException(err as Error);
+    span.setStatus({ code: 2 /* ERROR */, message: (err as Error).message });
+    throw err;
+  } finally {
+    span.end();
+  }
+});
+```
+
+### Automatic instrumentation
+
+`Tracelit.start()` enables every auto-instrumentation package present in your `node_modules` via `@opentelemetry/auto-instrumentations-node`. No extra config needed.
+
+| Library | What is captured |
+|---|---|
+| Express / Fastify / Koa / Hapi | HTTP request traces, route and method attributes |
+| `http` / `https` | All inbound and outbound HTTP call traces |
+| `pg` / `mysql2` / `better-sqlite3` | SQL query traces with sanitised statement text |
+| Mongoose / MongoDB | MongoDB operation traces |
+| Redis / ioredis | Cache command traces |
+| gRPC | Client and server RPC traces |
+| GraphQL | Resolver and query traces |
+| Kafka.js / rhea | Message publish/consume traces |
+| Prisma | ORM operation traces |
+| Undici / fetch | Outbound HTTP call traces |
+
+---
+
+## Metrics
+
+`Tracelit.metrics` returns `null` before `start()` is called or when the SDK is disabled — optional chaining (`?.`) is safe everywhere.
+
+### Counter
+
+```typescript
+const ordersPlaced = Tracelit.metrics.counter("orders.placed", {
+  description: "Total orders placed",
+  unit: "{orders}",
+});
+
+ordersPlaced?.add(1, { currency: "USD", channel: "web" });
+```
+
+### Histogram
+
+```typescript
+const apiLatency = Tracelit.metrics.histogram("external.api.duration", {
+  description: "External API call duration",
+  unit: "ms",
+});
+
+const start = Date.now();
+await callExternalApi();
+apiLatency?.record(Date.now() - start, { service: "stripe" });
+```
+
+### Gauge
+
+```typescript
+const queueDepth = Tracelit.metrics.gauge("job_queue.depth", {
+  description: "Number of pending background jobs",
+  unit: "{jobs}",
+});
+
+queueDepth?.record(await queue.pendingCount(), { queue: "default" });
+```
+
+### Observable gauge (callback-based)
+
+Use when the value is expensive to compute and should only be read on the export interval:
+
+```typescript
+const queueGauge = Tracelit.metrics.observableGauge("message.queue.size", {
+  description: "Estimated message queue size",
+  unit: "{messages}",
+});
+
+queueGauge?.addCallback((result) => {
+  result.observe(getQueueSize(), { queue: "events" });
+});
+```
+
+### HTTP server metrics (Express middleware)
+
+```typescript
+import express from "express";
+import Tracelit from "@tracelit/sdk";
+
+const app = express();
+app.use(Tracelit.expressMetricsMiddleware()); // ← add before routes
+```
+
+| Metric | Type | Description |
+|---|---|---|
+| `http.server.request.count` | Counter | Total HTTP requests |
+| `http.server.request.duration` | Histogram | Request duration (ms) |
+| `http.server.error.count` | Counter | 5xx responses |
+
+Attributes on all HTTP metrics: `http.method`, `http.route`, `http.status_code`.
+
+### Automatic process metrics
+
+Once `Tracelit.start()` is called, the following are collected with no extra code:
+
+| Metric | Type | Description | Interval |
+|---|---|---|---|
+| `process.memory.rss` | Gauge | Process RSS memory (MB) | 60 s |
+| `process.event_loop.lag` | Histogram | Node.js event loop lag (ms) | 30 s |
+
+Both pollers use `unref()`'d timers and will not prevent your process from exiting.
+
+---
+
+## Logging
+
+### Console bridge (automatic)
+
+When `Tracelit.start()` is called, all `console.debug/log/info/warn/error` calls are automatically forwarded to the OTel LoggerProvider. Original console output is preserved and logs are correlated with the active trace via `trace_id` and `span_id`.
+
+| `console` method | OTel SeverityNumber |
+|---|---|
+| `debug` / `log` | 5 (DEBUG) |
+| `info` | 9 (INFO) |
+| `warn` | 13 (WARN) |
+| `error` | 17 (ERROR) |
+
+### Winston transport
+
+```typescript
+import winston from "winston";
+import { WinstonTransport } from "@tracelit/sdk";
+import { logs } from "@opentelemetry/api-logs";
+
+const logger = winston.createLogger({
+  transports: [
+    new winston.transports.Console(),
+    new WinstonTransport(logs.getLoggerProvider()),
+  ],
+});
+
+logger.info("Order created", { orderId: "ord_123" });
+```
+
+### Pino destination
+
+```typescript
+import pino from "pino";
+import { createPinoDestination } from "@tracelit/sdk";
+import { logs } from "@opentelemetry/api-logs";
+
+const otelDest = createPinoDestination(logs.getLoggerProvider());
+
+const logger = pino(
+  pino.multistream([
+    { stream: process.stdout },
+    { stream: otelDest },
+  ])
+);
+
+logger.info({ orderId: "ord_123" }, "Order created");
+```
+
+---
+
+## Sampling and error guarantee
+
+```typescript
+Tracelit.configure((config) => {
+  config.sampleRate = 0.1; // keep 10% of traces
+});
+```
+
+<Note>
+  **Error spans are always exported**, even when the parent trace is outside the sample ratio. The SDK uses `ErrorAlwaysOnSampler` + `ErrorSpanProcessor` to guarantee this — no configuration required.
+</Note>
+
+---
+
+## Disabling in tests
+
+```typescript
+// tracelit.ts
+Tracelit.configure((config) => {
+  config.apiKey      = process.env.TRACELIT_API_KEY;
+  config.serviceName = "my-service";
+  config.enabled     = process.env.TRACELIT_ENABLED !== "false";
+});
+Tracelit.start();
+```
+
+```bash
+# Run tests with telemetry off
+TRACELIT_ENABLED=false npx jest
+
+# Or set permanently in .env.test
+TRACELIT_ENABLED=false
+```
+
+---
+
+## TypeScript / JavaScript compatibility
+
+The package ships as **dual CJS + ESM** bundles with full TypeScript declaration files.
+
+<CodeGroup>
+```typescript ESM (TypeScript / modern Node)
+import Tracelit from "@tracelit/sdk";
+
+Tracelit.configure((c) => {
+  c.apiKey      = process.env.TRACELIT_API_KEY;
+  c.serviceName = "my-app";
+});
+Tracelit.start();
+```
+
+```javascript CommonJS
+const Tracelit = require("@tracelit/sdk").default;
+
+Tracelit.configure((c) => {
+  c.apiKey      = process.env.TRACELIT_API_KEY;
+  c.serviceName = "my-app";
+});
+Tracelit.start();
+```
+</CodeGroup>
+
+---
+
+## Complete example
+
+```typescript
+import "./tracelit"; // initialise first!
+
+import express from "express";
+import Tracelit from "@tracelit/sdk";
+
+const app = express();
+app.use(Tracelit.expressMetricsMiddleware());
+
+app.post("/orders", async (req, res) => {
+  const result = await Tracelit.tracer.startActiveSpan("create-order", async (span) => {
+    span.setAttribute("order.channel", req.body.channel ?? "web");
+
+    try {
+      const order = await createOrder(req.body);
+      span.setAttribute("order.id", order.id);
+      return order;
+    } catch (err) {
+      span.recordException(err as Error);
+      span.setStatus({ code: 2, message: (err as Error).message });
+      throw err;
+    } finally {
+      span.end();
+    }
+  });
+
+  res.status(201).json(result);
+});
+
+app.listen(3000, () => console.log("Listening on :3000"));
+```
+
+---
+
+## GitHub
+
+Source code and issue tracker: [github.com/Tracelit-AI/tracelit-node](https://github.com/Tracelit-AI/tracelit-node)

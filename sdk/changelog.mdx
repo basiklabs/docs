@@ -1,0 +1,227 @@
+---
+title: "SDK Changelog"
+description: "Every release across all four Tracelit backend SDKs — Node.js, Go, Ruby, and .NET — in one place."
+icon: "clock-rotate-left"
+iconType: "duotone"
+---
+
+<Note>
+  Jump to a specific SDK: [Node.js](#nodejs) · [Go](#go) · [Ruby](#ruby) · [.NET](#net)
+</Note>
+
+---
+
+## <Icon icon="node-js" iconType="brands" color="#68a063" /> Node.js — `@tracelit/sdk` {#nodejs}
+
+Install the latest version:
+
+```bash
+npm install @tracelit/sdk@latest
+```
+
+---
+
+### v0.1.1 — Apr 27, 2026
+
+<Badge>Latest</Badge>
+
+**New**
+
+- `Tracelit.metrics.observableGauge()` — callback-based gauge that reads on export interval instead of on every call. Ideal for expensive computations like queue depth polling
+- `WinstonTransport` — named export that bridges Winston logs to the OTel LoggerProvider with automatic `trace_id` / `span_id` injection
+- `createPinoDestination()` — Pino multistream destination for forwarding logs to the Tracelit log pipeline
+- `Tracelit.expressMetricsMiddleware()` — drop-in Express middleware that records `http.server.request.count`, `http.server.request.duration`, and `http.server.error.count` per route
+
+**Improvements**
+
+- `ErrorAlwaysOnSampler` + `ErrorSpanProcessor` pair now guarantees error span export even at `sampleRate: 0.0`
+- Console bridge (`console.debug/log/info/warn/error`) now preserves original output — no silent swallowing
+- `process.event_loop.lag` histogram timer switched to `unref()` so it never prevents process exit
+- Dual CJS + ESM bundles with TypeScript 5 declaration files — no `moduleResolution` shenanigans needed
+
+**Fixes**
+
+- Fixed `Tracelit.metrics` returning stale `null` reference after `Tracelit.start()` called more than once
+- Fixed ESM named exports (`WinstonTransport`, `createPinoDestination`) not resolving in some bundler setups
+
+---
+
+### v0.1.0 — Apr 20, 2026
+
+**Initial release**
+
+First public release of the Tracelit Node.js SDK:
+
+- `Tracelit.configure()` + `Tracelit.start()` lifecycle
+- Full auto-instrumentation via `@opentelemetry/auto-instrumentations-node` — Express, Fastify, pg, Mongoose, Redis, gRPC, GraphQL, Prisma, Kafka.js, Undici, and more
+- `Tracelit.tracer` — standard OTel `Tracer` for manual span creation
+- `Tracelit.metrics` — Counter, Histogram, and Gauge helpers with optional-chaining-safe `null` returns before `start()`
+- Automatic `process.memory.rss` and `process.event_loop.lag` polling
+- Console bridge for automatic log forwarding with trace correlation
+- `ErrorAlwaysOnSampler` + `ErrorSpanProcessor` — errors always exported regardless of sampling
+- Environment variable fallbacks for all config options
+- Node.js ≥ 18, TypeScript ≥ 5, CJS + ESM
+
+---
+
+## <Icon icon="golang" iconType="brands" color="#00acd7" /> Go — `github.com/tracelit-ai/tracelit-go` {#go}
+
+Install the latest version:
+
+```bash
+go get github.com/tracelit-ai/tracelit-go@latest
+```
+
+---
+
+### v0.1.1 — Apr 27, 2026
+
+<Badge>Latest</Badge>
+
+**New**
+
+- `span.RecordPanic(r)` — records a panic value as an error span event and re-panics by default; `WithSwallowPanic()` option absorbs the panic instead
+- `tracelit.StartProducerSpan` / `StartConsumerSpan` — explicit producer/consumer span kind constructors for message queue instrumentation
+- `bridge.NewZerologWriter(w)` — zerolog writer bridge that forwards log records to the OTel LoggerProvider with trace correlation
+
+**Improvements**
+
+- `RecordError` now attaches a full goroutine stack trace as `exception.stacktrace` — no manual `debug.Stack()` needed
+- Logger bridges (slog, zap, logrus, zerolog) now inject `trace_id` and `span_id` from the context into every log record automatically
+- `middleware.NewHTTPHandler` sets `http.route` attribute using the registered mux pattern (not the raw path), reducing cardinality
+- Runtime metric export interval configurable via `WithRuntimeInterval(d)`; defaults to 60 s
+
+**Fixes**
+
+- Fixed `tracelit.Configure()` (env-var path) not picking up `TRACELIT_ENABLED=false` correctly when the env var was set to the string `"0"`
+- Fixed gRPC client middleware not propagating W3C `traceparent` header when the outgoing context had no existing span
+
+---
+
+### v0.1.0 — Apr 20, 2026
+
+**Initial release**
+
+First public release of the Tracelit Go SDK:
+
+- `tracelit.New(opts...)` functional-options constructor + `tracelit.Configure()` env-var path
+- `StartSpan`, `StartServerSpan`, `StartClientSpan` — typed span kind helpers with attribute varargs
+- `span.RecordError(err)` — captures error + sets `codes.Error` status
+- `TraceID(ctx)` / `SpanID(ctx)` — string accessors for log correlation
+- `middleware.NewHTTPHandler` / `NewHTTPTransport` — server and client HTTP instrumentation
+- `middleware.NewGRPCServerHandler` / `NewGRPCClientHandler` — gRPC stats handler instrumentation
+- Logger bridges: slog (`bridge.NewSlogHandler`), zap (`bridge.NewZapCore`), logrus (`bridge.NewLogrusHook`)
+- `tracelit.Counter` / `Histogram` — OTel metric instrument helpers
+- Automatic runtime metrics: goroutines, GC, memory RSS — exported every 60 s
+- `ErrorAlwaysOnSampler` + `ErrorSpanProcessor` — errors always exported
+- Goroutine-safe context propagation via `context.Context`
+- MIT license, Go ≥ 1.21
+
+---
+
+## <Icon icon="gem" iconType="duotone" color="#cc342d" /> Ruby — `tracelit` gem {#ruby}
+
+Install the latest version:
+
+```bash
+gem update tracelit
+# or in Gemfile: gem "tracelit"
+```
+
+---
+
+### v0.1.1 — Apr 27, 2026
+
+<Badge>Latest</Badge>
+
+**New**
+
+- Sidekiq job metrics — `sidekiq.job.count`, `sidekiq.job.duration`, `sidekiq.job.error.count` emitted automatically via server middleware when Sidekiq is present
+- Database connection pool metrics — `db.connection_pool.size/busy/idle/waiting` polled every 30 s from `ActiveRecord::Base.connection_pool`
+- `Tracelit.metrics.gauge` — point-in-time metric instrument for custom gauges
+
+**Improvements**
+
+- Rails log forwarding now uses the `ActiveSupport::BroadcastLogger` API (Rails 7.1+) and falls back gracefully to `Logger::Formatter` wrapping on older versions
+- `config.resource_attributes` hash is now deep-merged on top of the default OTel resource so SDK attributes (`service.name`, `service.version`) are never overwritten
+- All HTTP server metrics now include `controller` and `action` as attributes when instrumented through Action Pack
+
+**Fixes**
+
+- Fixed `Tracelit.start!` being called twice during Rails boot when both a Railtie and an explicit `Tracelit.start!` call were present — now idempotent
+- Fixed `ErrorSpanProcessor` not exporting spans when the parent sampler returned `DROP` for a span whose status was set to error via `span.status=`
+
+---
+
+### v0.1.0 — Apr 20, 2026
+
+**Initial release**
+
+First public release of the Tracelit Ruby SDK:
+
+- `Tracelit.configure` block + Railtie for zero-touch Rails setup
+- `Tracelit.start!` for Sinatra and Rack
+- `Tracelit.tracer` — `OpenTelemetry::Trace::Tracer` for manual spans
+- `Tracelit.metrics` — Counter, Histogram, Gauge helpers
+- Full `opentelemetry-instrumentation-all` auto-instrumentation: Rails, ActiveRecord, Action View, Rack, Net::HTTP, Faraday, Redis, Sidekiq, Bunny, gRPC
+- Automatic HTTP server metrics via `ActiveSupport::Notifications`
+- Process RSS memory poller (60 s interval)
+- Rails log forwarding with `trace_id` / `span_id` correlation
+- `ErrorAlwaysOnSampler` + `ErrorSpanProcessor` — errors always exported
+- `config.enabled` / `TRACELIT_ENABLED=false` for test environments
+- Ruby ≥ 3.0, MIT license
+
+---
+
+## <Icon icon="microsoft" iconType="brands" color="#512bd4" /> .NET — `Tracelit` NuGet package {#net}
+
+Install the latest version:
+
+```bash
+dotnet add package Tracelit
+```
+
+---
+
+### v0.1.1 — Apr 27, 2026
+
+<Badge>Latest</Badge>
+
+**New**
+
+- `TracelitClient.Metrics.Gauge(name, callback, ...)` — observable gauge with a pull-based callback, no background timer needed
+- `ResourceAttributes` now supports `Dictionary<string, string>` and is applied to all signals (traces, metrics, logs)
+- Non-DI `TracelitClient.Configure` + `TracelitClient.Start` + `TracelitClient.Shutdown` path for console and worker apps
+- `./release.sh` helper — bumps version, commits, tags, and triggers the NuGet publish workflow in one command
+
+**Improvements**
+
+- `AddTracelit()` now registers `ILogger` → OTLP bridge automatically — no separate `AddOpenTelemetryLogging()` call needed
+- `ErrorAlwaysOnSampler` upgrades `Drop` decisions to `RecordOnly` (not `RecordAndSample`) so unsampled error spans don't appear in trace waterfalls but are still exported to the logs table
+- `dotnet.gc.*` and `dotnet.thread_pool.*` metrics now exported via `System.Diagnostics.Metrics` runtime instrumentation (no reflection)
+- `process.memory.rss` poller uses `IHostedService` in DI apps so it respects graceful shutdown
+
+**Fixes**
+
+- Fixed `TracelitClient.Tracer.StartActiveSpan` returning `null` when called before `Start()` — now returns a no-op span instead
+- Fixed `Validate()` throwing a `NullReferenceException` instead of a descriptive `ArgumentException` when `ApiKey` was not set
+- Fixed W3C `traceparent` propagation header not being injected on `HttpClient` requests when the activity had no parent
+
+---
+
+### v0.1.0 — Apr 20, 2026
+
+**Initial release**
+
+First public release of the Tracelit .NET SDK:
+
+- `builder.Services.AddTracelit(config => ...)` — single-call ASP.NET Core DI integration
+- `TracelitConfiguration` with full env-var fallbacks and `Validate()` guard
+- `TracelitClient` static façade for non-DI usage
+- Automatic instrumentation: ASP.NET Core, HttpClient, SqlClient, .NET runtime metrics
+- `TracelitMetrics` — Counter, Histogram, Gauge wrappers over `System.Diagnostics.Metrics`
+- `MemoryPollerService` — background `process.memory.rss` polling (60 s)
+- `ILogger` forwarding via OTLP with `trace_id` / `span_id` correlation
+- `ErrorAlwaysOnSampler` + `ErrorSpanProcessor` — errors always exported
+- `Enabled = false` / `TRACELIT_ENABLED=false` for test environments
+- .NET 8+, MIT license, published to NuGet

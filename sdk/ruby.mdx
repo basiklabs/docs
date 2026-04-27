@@ -1,0 +1,320 @@
+---
+title: "Ruby SDK"
+description: "Zero-touch OpenTelemetry instrumentation for Rails, Sinatra, and Rack apps. Drop in the gem and Tracelit wires up traces, metrics, and logs — including Sidekiq, ActiveRecord, and Redis — automatically."
+icon: "gem"
+iconType: "duotone"
+---
+
+<Note>
+  **Requirements:** Ruby ≥ 3.0
+</Note>
+
+---
+
+## Installation
+
+Add to your `Gemfile`:
+
+```ruby Gemfile
+gem "tracelit"
+```
+
+Then run:
+
+```bash
+bundle install
+```
+
+---
+
+## Quick start
+
+<Tabs>
+  <Tab title="Rails">
+    <Steps>
+      <Step title="Create an initializer">
+        ```ruby config/initializers/tracelit.rb
+        Tracelit.configure do |config|
+          config.api_key      = ENV["TRACELIT_API_KEY"]   # required
+          config.service_name = "payments-api"             # required
+          config.environment  = ENV["RAILS_ENV"]
+          config.sample_rate  = 1.0
+        end
+        ```
+      </Step>
+      <Step title="You're done">
+        The Railtie picks up the configuration automatically and calls `Tracelit.start!` at boot. No further changes needed.
+      </Step>
+    </Steps>
+  </Tab>
+  <Tab title="Sinatra / Rack">
+    <Steps>
+      <Step title="Require and configure">
+        ```ruby app.rb
+        require "tracelit"
+
+        Tracelit.configure do |config|
+          config.api_key      = ENV["TRACELIT_API_KEY"]
+          config.service_name = "my-sinatra-app"
+          config.environment  = ENV["RACK_ENV"]
+        end
+
+        Tracelit.start!  # must be called explicitly outside Rails
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+---
+
+## Configuration reference
+
+All options can be set in the `configure` block **or** via environment variables.
+
+| Option | Env variable | Default | Description |
+|---|---|---|---|
+| `api_key` | `TRACELIT_API_KEY` | `nil` | **Required.** Your Tracelit ingest API key |
+| `service_name` | `TRACELIT_SERVICE_NAME` | Rails app name | **Required.** Service name shown in Tracelit |
+| `environment` | `TRACELIT_ENVIRONMENT` | `"production"` | Deployment environment tag |
+| `endpoint` | `TRACELIT_ENDPOINT` | `https://ingest.tracelit.app` | Override only when self-hosting |
+| `sample_rate` | `TRACELIT_SAMPLE_RATE` | `1.0` | Head-based sampling ratio `0.0`–`1.0`. Errors always export. |
+| `enabled` | `TRACELIT_ENABLED` | `true` | Set `false` to disable all telemetry |
+| `resource_attributes` | — | `{}` | Extra key/value pairs on every span, metric, and log |
+
+### Custom resource attributes
+
+```ruby
+Tracelit.configure do |config|
+  config.api_key      = ENV["TRACELIT_API_KEY"]
+  config.service_name = "orders-api"
+  config.resource_attributes = {
+    "deployment.region" => "us-east-1",
+    "team"              => "platform",
+  }
+end
+```
+
+---
+
+## Tracing
+
+### Manual spans
+
+`Tracelit.tracer` is an `OpenTelemetry::Trace::Tracer` and supports the full OpenTelemetry Ruby API.
+
+```ruby
+Tracelit.tracer.in_span("process_payment") do |span|
+  span.set_attribute("payment.id",       payment.id.to_s)
+  span.set_attribute("payment.amount",   amount)
+  span.set_attribute("payment.currency", currency)
+
+  result = process(payment)
+
+  span.set_attribute("payment.status", result.status)
+  result
+end
+```
+
+### Nesting spans
+
+```ruby
+Tracelit.tracer.in_span("checkout") do |checkout_span|
+  checkout_span.set_attribute("cart.items", cart.size)
+
+  Tracelit.tracer.in_span("validate-inventory") do |inv_span|
+    validate_inventory!(cart)
+  end
+
+  Tracelit.tracer.in_span("charge-card") do |pay_span|
+    pay_span.set_attribute("payment.gateway", "stripe")
+    charge_card!(cart, payment_method)
+  end
+end
+```
+
+### Recording errors
+
+```ruby
+Tracelit.tracer.in_span("risky-operation") do |span|
+  begin
+    risky!
+  rescue => e
+    span.record_exception(e)
+    span.status = OpenTelemetry::Trace::Status.error(e.message)
+    raise
+  end
+end
+```
+
+### Automatic instrumentation
+
+The SDK enables every instrumentation gem bundled in `opentelemetry-instrumentation-all`:
+
+| Library | What is captured |
+|---|---|
+| Rails / Action Pack | HTTP request traces, controller and action attributes |
+| Active Record | SQL query traces with sanitised statement text |
+| Action View | Template render times |
+| Rack | Low-level HTTP middleware spans |
+| Net::HTTP | Outbound HTTP call traces |
+| Faraday | Outbound HTTP call traces |
+| Redis | Cache command traces |
+| Sidekiq | Job enqueue and execute traces |
+| Bunny | AMQP publish/subscribe traces |
+| gRPC | Client and server RPC traces |
+
+Additional libraries (Mongo, pg, mysql2, Kafka, etc.) are also instrumented when their gems are present.
+
+---
+
+## Metrics
+
+### Counter
+
+Counts discrete events — request counts, job completions, errors, etc.
+
+```ruby
+counter = Tracelit.metrics.counter(
+  "orders.placed",
+  description: "Total orders placed",
+  unit: "{orders}"
+)
+
+counter.add(1, attributes: { "currency" => "USD", "channel" => "web" })
+```
+
+### Histogram
+
+Records distributions of values — durations, payload sizes, queue depths, etc.
+
+```ruby
+histogram = Tracelit.metrics.histogram(
+  "external.api.duration",
+  description: "External API call duration",
+  unit: "ms"
+)
+
+start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+call_external_api
+elapsed_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000.0
+
+histogram.record(elapsed_ms, attributes: { "service" => "stripe" })
+```
+
+### Gauge
+
+Records a point-in-time value — pool sizes, queue lengths, cache hit rates, etc.
+
+```ruby
+gauge = Tracelit.metrics.gauge(
+  "job_queue.depth",
+  description: "Number of pending background jobs",
+  unit: "{jobs}"
+)
+
+gauge.record(JobQueue.pending_count, attributes: { "queue" => "default" })
+```
+
+### Automatic metrics collection
+
+Once `Tracelit.start!` has been called, the following metrics are collected with no extra code:
+
+**HTTP server metrics (Rails) — emitted per request via `ActiveSupport::Notifications`:**
+
+| Metric | Type | Description |
+|---|---|---|
+| `http.server.request.count` | Counter | Total HTTP requests processed |
+| `http.server.request.duration` | Histogram | Request duration in milliseconds |
+| `http.server.error.count` | Counter | Total 5xx responses |
+| `db.query.duration` | Histogram | ActiveRecord time per request (ms) |
+
+Attributes: `http.method`, `http.route`, `http.status_code`, `controller`, `action`.
+
+**Sidekiq job metrics — emitted per job execution via server middleware:**
+
+| Metric | Type | Description |
+|---|---|---|
+| `sidekiq.job.count` | Counter | Total jobs processed |
+| `sidekiq.job.duration` | Histogram | Job execution duration (ms) |
+| `sidekiq.job.error.count` | Counter | Total jobs that raised an error |
+
+Attributes: `sidekiq.job.class`, `sidekiq.queue`, `sidekiq.status` (`success` or `error`).
+
+**Database connection pool — polled every 30 seconds:**
+
+| Metric | Type | Description |
+|---|---|---|
+| `db.connection_pool.size` | Gauge | Maximum connections in the pool |
+| `db.connection_pool.busy` | Gauge | Connections currently checked out |
+| `db.connection_pool.idle` | Gauge | Connections available for checkout |
+| `db.connection_pool.waiting` | Gauge | Threads waiting for a connection |
+
+**Process memory — polled every 60 seconds:**
+
+| Metric | Type | Description |
+|---|---|---|
+| `process.memory.rss` | Gauge | Process RSS memory in megabytes |
+
+---
+
+## Log forwarding (Rails)
+
+When Rails is present, `Tracelit.start!` installs a broadcast target on `Rails.logger`. Every `Rails.logger` call is forwarded to the OTel LoggerProvider and exported to the Tracelit logs table via OTLP.
+
+- Original logger output is **preserved** — nothing changes for your existing log pipeline
+- Log records are automatically correlated with the active trace via `trace_id` and `span_id`
+
+```ruby
+# This works exactly as before — no changes needed
+Rails.logger.info("Order #{order.id} created", { amount: order.total })
+# ↑ Automatically includes trace_id + span_id in Tracelit
+```
+
+---
+
+## Sampling and error guarantee
+
+```ruby
+config.sample_rate = 0.1   # keep 10% of traces
+```
+
+<Note>
+  **Error spans are always exported**, even when the parent trace is outside the sample ratio. The SDK uses a custom `ErrorAlwaysOnSampler` + `ErrorSpanProcessor` pair to guarantee this — no configuration required.
+</Note>
+
+---
+
+## Disabling in tests
+
+```ruby
+# config/initializers/tracelit.rb
+Tracelit.configure do |config|
+  config.api_key      = ENV["TRACELIT_API_KEY"]
+  config.service_name = "my-app"
+  config.enabled      = ENV["TRACELIT_ENABLED"] != "false"
+end
+```
+
+```bash
+# Run tests with telemetry off
+TRACELIT_ENABLED=false bundle exec rspec
+
+# Or set permanently in config/environments/test.rb or .env.test
+TRACELIT_ENABLED=false
+```
+
+---
+
+## Running the SDK's own tests
+
+```bash
+bundle install
+bundle exec rspec
+```
+
+---
+
+## GitHub
+
+Source code and issue tracker: [github.com/Tracelit-AI/tracelit-ruby](https://github.com/Tracelit-AI/tracelit-ruby)

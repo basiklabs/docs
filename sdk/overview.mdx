@@ -1,0 +1,174 @@
+---
+title: "Overview"
+description: "Drop-in OpenTelemetry instrumentation for your server-side applications. Traces, metrics, and logs — all flowing to Tracelit in minutes."
+icon: "grid"
+iconType: "duotone"
+---
+
+
+
+## One SDK per runtime. Same great experience everywhere.
+
+Pick your language, drop in the SDK, and Tracelit handles the rest. Every SDK speaks OTLP, ships traces + metrics + logs, and guarantees error spans are **always** exported — even when sampling is on.
+
+<CardGroup cols={2}>
+  <Card
+    title="Node.js"
+    icon="node-js"
+    iconType="brands"
+    href="/sdk/node"
+    color="#68a063"
+  >
+    TypeScript-first. Express, Fastify, Koa, NestJS — all auto-instrumented. CJS and ESM bundles included.
+  </Card>
+  <Card
+    title="Go"
+    icon="golang"
+    iconType="brands"
+    href="/sdk/go"
+    color="#00acd7"
+  >
+    Idiomatic functional-options API. Bridges for slog, zap, logrus, and zerolog. Full goroutine-safe context propagation.
+  </Card>
+  <Card
+    title="Ruby"
+    icon="gem"
+    iconType="duotone"
+    href="/sdk/ruby"
+    color="#cc342d"
+  >
+    Zero-touch Rails setup via Railtie. Sinatra and Rack supported. Auto-instruments ActiveRecord, Redis, Sidekiq and more.
+  </Card>
+  <Card
+    title=".NET"
+    icon="microsoft"
+    iconType="brands"
+    href="/sdk/dotnet"
+    color="#512bd4"
+  >
+    First-class ASP.NET Core DI integration. `ILogger` forwarding. GC, thread pool, and HttpClient auto-metrics.
+  </Card>
+</CardGroup>
+
+---
+
+## What every SDK includes
+
+<CardGroup cols={2}>
+  <Card title="Distributed Tracing" icon="sitemap" color="#ff5900">
+    Automatic + manual spans. Context propagated across HTTP, gRPC, and message queues out of the box.
+  </Card>
+  <Card title="Custom Metrics" icon="grid" color="#0ea5e9">
+    Counter, Histogram, and Gauge helpers. Runtime and process metrics polled automatically — no extra code.
+  </Card>
+  <Card title="Structured Logs" icon="terminal" color="#8b5cf6">
+    Every log correlated to the active trace via `trace_id` + `span_id`. Your existing logger keeps working.
+  </Card>
+  <Card title="Error Guarantee" icon="shield-check" color="#22c55e">
+    Error spans are **always** exported — even when the parent trace is outside the sample ratio.
+  </Card>
+  <Card title="Head-based Sampling" icon="filter" color="#f59e0b">
+    Set `sampleRate` to reduce volume. `0.1` keeps 10% of traces. Errors bypass the sampler entirely.
+  </Card>
+  <Card title="Zero-config Disable" icon="gear" color="#64748b">
+    Set `TRACELIT_ENABLED=false` to silence all telemetry in tests — no code changes needed.
+  </Card>
+</CardGroup>
+
+---
+
+## Shared environment variables
+
+All SDKs read the same environment variables. Set them once, use them everywhere.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `TRACELIT_API_KEY` | **Yes** | — | Your Tracelit ingest API key |
+| `TRACELIT_SERVICE_NAME` | **Yes** | — | Service name shown in the Tracelit dashboard |
+| `TRACELIT_ENVIRONMENT` | No | `production` | Deployment environment tag (`staging`, `development`, etc.) |
+| `TRACELIT_ENDPOINT` | No | `https://ingest.tracelit.app` | Override only when self-hosting |
+| `TRACELIT_SAMPLE_RATE` | No | `1.0` | Head-based sampling ratio between `0.0` and `1.0` |
+| `TRACELIT_ENABLED` | No | `true` | Set `false` to disable all telemetry |
+
+<Tip>
+  All variables can also be set in code — useful when you need per-environment logic or secrets management.
+</Tip>
+
+---
+
+## Automatic instrumentation matrix
+
+Each SDK instruments a different ecosystem, but the principle is identical: call one function and get traces for free.
+
+| Library / Framework | <Icon icon="node-js" iconType="brands" /> Node | <Icon icon="golang" iconType="brands" /> Go | <Icon icon="gem" iconType="duotone" /> Ruby | <Icon icon="microsoft" iconType="brands" /> .NET |
+|---|:---:|:---:|:---:|:---:|
+| HTTP server | ✅ | ✅ | ✅ | ✅ |
+| HTTP client | ✅ | ✅ | ✅ | ✅ |
+| SQL / ORM | ✅ | ✅ | ✅ | ✅ |
+| Redis | ✅ | — | ✅ | — |
+| gRPC | ✅ | ✅ | — | — |
+| Message queues | ✅ | — | ✅ | — |
+| GraphQL | ✅ | — | — | — |
+| Runtime metrics | ✅ | ✅ | ✅ | ✅ |
+| Log forwarding | ✅ | ✅ | ✅ | ✅ |
+
+---
+
+## Quick-start comparison
+
+<CodeGroup>
+```typescript Node.js
+// tracelit.ts (import FIRST)
+import Tracelit from "@tracelit/sdk";
+
+Tracelit.configure((config) => {
+  config.apiKey      = process.env.TRACELIT_API_KEY;
+  config.serviceName = "payments-api";
+  config.environment = process.env.NODE_ENV ?? "production";
+});
+Tracelit.start();
+```
+
+```go Go
+sdk, err := tracelit.New(
+    tracelit.WithAPIKey(os.Getenv("TRACELIT_API_KEY")),
+    tracelit.WithServiceName("payments-api"),
+    tracelit.WithEnvironment("production"),
+)
+if err != nil { log.Fatal(err) }
+defer sdk.Shutdown(context.Background())
+```
+
+```ruby Ruby
+# config/initializers/tracelit.rb
+Tracelit.configure do |config|
+  config.api_key      = ENV["TRACELIT_API_KEY"]
+  config.service_name = "payments-api"
+  config.environment  = ENV["RAILS_ENV"]
+end
+# Railtie calls Tracelit.start! automatically
+```
+
+```csharp .NET
+// Program.cs
+builder.Services.AddTracelit(config =>
+{
+    config.ApiKey      = Environment.GetEnvironmentVariable("TRACELIT_API_KEY");
+    config.ServiceName = "payments-api";
+    config.Environment = "production";
+});
+```
+</CodeGroup>
+
+---
+
+## Need help?
+
+<CardGroup cols={2}>
+  <Card title="Contact Support" icon="envelope" href="mailto:hey@tracelit.io">
+    Reach the team directly. We respond fast.
+  </Card>
+  <Card title="SDK Changelog" icon="clock-rotate-left" href="/sdk/changelog">
+    Every release across all four SDKs, in one place.
+  </Card>
+</CardGroup>
