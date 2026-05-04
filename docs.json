@@ -68,6 +68,7 @@
           {
             "group": "Releases",
             "pages": [
+              "platform-changelog",
               "changelog",
               "sdk/changelog"
             ]

@@ -1,0 +1,189 @@
+---
+title: "Platform Changelog"
+description: "Every product release for the Tracelit dashboard, API, incident pipeline, and observability backend."
+icon: "server"
+iconType: "duotone"
+---
+
+<Note>
+  All API changes are backwards-compatible unless marked **Breaking**. Changes to the ingest pipeline take effect immediately for new data. Historical data is never modified.
+</Note>
+
+---
+
+## May 4, 2026 — Noise Reduction, Severity Levels & Service Archiving
+
+<Badge>Latest</Badge>
+
+This release addresses the most common piece of feedback we received from engineers: **Tracelit was too noisy**. Every 4xx, every repeated error, every billing reminder was generating an alert — making it easy to ignore the alerts that actually mattered. This release rewrites how errors are classified, when alerts fire, and what reaches AI analysis.
+
+---
+
+### Error Severity Levels
+
+Errors are now classified into three tiers at ingest time, before they reach the incident pipeline.
+
+| Tier | When | Dashboard | Incident | Slack alert | Email alert | AI analysis |
+|------|------|-----------|----------|-------------|-------------|-------------|
+| <Badge color="gray">low</Badge> | 4xx HTTP errors, exceptions without a stack trace | ✓ | ✗ | ✗ | ✗ | ✗ |
+| <Badge color="yellow">medium</Badge> | 5xx errors without a stack trace | ✓ | ✓ | ✓ | ✗ | ✗ |
+| <Badge color="red">high</Badge> | Exceptions with a full stack trace | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+**What this means in practice:**
+
+- A deliberate `401 Unauthorized` or `403 Forbidden` raised by your app is still visible on the Errors dashboard for debugging, but it never creates an incident, fires a Slack message, or burns an AI token.
+- A `503 Service Unavailable` with no stack trace creates an incident and sends a Slack notification — but no email and no AI summary.
+- An unhandled exception with a full stack trace gets the full treatment: incident, Slack, email, and AI root-cause analysis.
+
+---
+
+### Smarter Incident Alerting
+
+**AI analysis is now gated on severity and stack trace presence.**
+
+Before this change, every incident triggered a Claude analysis regardless of whether there was enough signal to analyse. This wasted AI tokens on HTTP status code errors where the "root cause" is already obvious from the error itself.
+
+AI analysis now runs only when:
+1. Severity is `high` (exception with stack trace), **and**
+2. The workspace has not exhausted its monthly AI summary cap.
+
+**Milestone-based re-alerting replaces "alert every 5 occurrences".**
+
+The old threshold was `occurrence_count % 5 === 0` — every 5th hit sent an alert. For a busy endpoint that generated hundreds of errors this produced dozens of Slack messages per hour for the same root cause.
+
+Alerts now fire at: **1st, 10th, 50th, 100th, 500th, 1000th** occurrence. Everything in between is counted and visible on the incident detail, but silent.
+
+**Quiet-period re-alerts.**
+
+If an error goes quiet for more than **1 hour** and then resurfaces, a fresh alert fires regardless of milestone. This ensures that an error that was "resolved" (or just coincidentally went quiet) gets your attention when it comes back — without requiring you to manually reopen it.
+
+---
+
+### Incident UI Improvements
+
+**Incidents now surface by recency, not creation time.**
+
+The incident list (`GET /observability/services/:id/incidents`) now sorts by `last_seen_at DESC` instead of `opened_at DESC`. An incident that started last week but fired again five minutes ago now appears at the top of the list — where it belongs.
+
+Every incident in the API response now includes two new fields:
+
+```json
+{
+  "last_seen_at": "2026-05-04T15:31:00Z",
+  "occurrence_count": 47
+}
+```
+
+**Timeline recurrence events.**
+
+When a known fingerprint fires again, a `recurrence` event is appended to the incident timeline automatically. The timeline now answers the question "did this come back?" without needing to cross-reference occurrence counts manually.
+
+**Incidents no longer get stuck in `investigating`.**
+
+A pipeline collision between the autonomous agent and the observability worker was causing OTel incidents to remain in `investigating` status indefinitely. The agent now correctly ignores incidents that are fully managed by the worker (`trigger_type = 'exception'`).
+
+---
+
+### Snooze Visibility
+
+When a team member clicks **Ignore for 24 h** in a Slack alert, the incident is now clearly marked in the API:
+
+```json
+{
+  "snoozed_until": "2026-05-05T10:52:00Z"
+}
+```
+
+`snoozed_until` is `null` for active incidents and an ISO 8601 timestamp for snoozed ones. The field is included in both the incident list and detail responses.
+
+---
+
+### Email Alert Subject Lines
+
+Alert emails now use a consistent subject format that makes it easy to filter by product in your inbox:
+
+- **Site alerts:** `Tracelit Site Alert [My Site] Error spike detected #A3F2B1`
+- **Service alerts:** `Tracelit Service Alert [tracelit-api] ArgumentError in GET /api #87B485D`
+
+The short `#REF` suffix at the end of every subject makes it trivial to search your inbox and paste into Slack to reference a specific incident.
+
+---
+
+### Billing Email Deduplication
+
+The daily over-limit notification is now sent **at most once per calendar day** per workspace. Previously a race condition in the enrichment cron could send the same email multiple times within the same day. The notification is now written atomically to the database before the email is sent — if two workers race, only one succeeds and the second sees the row is already marked.
+
+---
+
+### Service & Site Archiving
+
+You can now archive a service or site to permanently stop data ingestion while preserving all historical data for review.
+
+**For services:**
+
+```http
+PATCH /api/v1/observability/services/:service_id/archive
+PATCH /api/v1/observability/services/:service_id/unarchive
+```
+
+**For sites:**
+
+```http
+PATCH /api/v1/sites/:id/archive
+PATCH /api/v1/sites/:id/unarchive
+```
+
+**What archiving does:**
+
+- New ingest data is silently dropped within seconds (Redis cache + DB fallback in the batchwriter).
+- The archived entity is excluded from list responses by default.
+- Incidents, errors, traces, and logs from before archiving remain fully readable.
+- **Archived entities do not count toward your plan's site or service limit** — archiving genuinely frees up a slot.
+
+**Unarchiving checks your plan first.** If you are already at the limit for your plan, unarchiving returns `402 Payment Required` with a `code: "site_limit_reached"` or `code: "service_limit_reached"` body.
+
+**Including archived items in list responses:**
+
+```http
+GET /api/v1/sites?include_archived=true
+GET /api/v1/observability/services?include_archived=true
+```
+
+When present, archived items include a non-null `archived_at` timestamp so the UI can display an **Archived** badge and disable ingest-related actions (snippet, settings, alerts).
+
+---
+
+**Fixes**
+
+- Fixed 4xx HTTP errors being synthesised as incidents when they had no exception. The ingest normaliser now only synthesises errors for HTTP status ≥ 500.
+- Fixed the Redis `NewErrorDedupTTL` for frontend site alerts being too short (25 min), causing rapid re-alerting for the same JS error. Extended to 4 hours.
+- Fixed site alert anomaly state expiring too quickly (30 min → 2 hours), which caused repeated "new error" alerts for the same source file and line.
+- Fixed `GetByToken` in the site middleware returning archived sites, which would allow an archived site's tracking script to keep ingesting events.
+
+---
+
+## April 27, 2026 — Observability Backend SDKs v0.1.1
+
+See the [SDK Changelog](/sdk/changelog) for full release notes covering Node.js, Go, Ruby, and .NET.
+
+---
+
+## April 20, 2026 — Observability Backend SDKs — Initial Release
+
+See the [SDK Changelog](/sdk/changelog) for the initial public release of all four backend SDKs.
+
+---
+
+## March 16, 2026 — Platform Launch
+
+Tracelit is live. The platform ships with:
+
+- **Session replay** — full DOM recording powered by rrweb, with privacy controls, masking, and trigger mode
+- **Heatmaps** — click, scroll depth, and move heatmaps per page
+- **Real-time visitors** — live presence counter with page-level breakdown
+- **Error tracking** — JS runtime errors, unhandled promise rejections, resource load failures, and API errors
+- **AI alerts** — anomaly detection for error spikes and new JS errors, with AI summaries and one-click resolution PRs via GitHub
+- **Session feature tagging** — tag sessions with arbitrary feature strings for A/B test and rollout analysis
+- **User identification** — `identify()` for linking sessions to your user model
+- **Privacy and consent** — `optOut()`, `optIn()`, `tl-block`, `tl-ignore`, Do Not Track respected
+- **Observability (beta)** — OpenTelemetry-native backend for traces, logs, metrics, and error incidents across Node.js, Go, Ruby, and .NET services
