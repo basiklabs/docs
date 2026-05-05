@@ -35,7 +35,7 @@ go get github.com/tracelit-ai/tracelit-go
 
     func main() {
         sdk, err := tracelit.New(
-            tracelit.WithAPIKey("tl_live_abc123"),
+            tracelit.WithAPIKey(os.Getenv("TRACELIT_API_KEY")),
             tracelit.WithServiceName("payments-api"),
             tracelit.WithEnvironment("production"),
         )
@@ -50,7 +50,7 @@ go get github.com/tracelit-ai/tracelit-go
   </Step>
   <Step title="Or use environment variables (zero code changes)">
     ```bash
-    export TRACELIT_API_KEY=tl_live_abc123
+    export TRACELIT_API_KEY=your-api-key
     export TRACELIT_SERVICE_NAME=payments-api
     export TRACELIT_ENVIRONMENT=production
     ```
@@ -354,7 +354,7 @@ All bridges route log records to the Tracelit log pipeline and automatically inj
 
 ```go
 sdk, err := tracelit.New(
-    tracelit.WithAPIKey("tl_live_abc123"),
+    tracelit.WithAPIKey(os.Getenv("TRACELIT_API_KEY")),
     tracelit.WithServiceName("high-traffic-api"),
     tracelit.WithSampleRate(0.1), // keep 10% of traces
 )
@@ -370,7 +370,7 @@ sdk, err := tracelit.New(
 
 ```go
 sdk, err := tracelit.New(
-    tracelit.WithAPIKey("tl_live_abc123"),
+    tracelit.WithAPIKey(os.Getenv("TRACELIT_API_KEY")),
     tracelit.WithServiceName("my-service"),
     tracelit.WithEnabled(false), // or TRACELIT_ENABLED=false
 )

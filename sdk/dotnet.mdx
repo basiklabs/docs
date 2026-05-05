@@ -52,7 +52,7 @@ dotnet add package Tracelit
         ```csharp Program.cs
         TracelitClient.Configure(config =>
         {
-            config.ApiKey      = "tl_live_abc123";
+            config.ApiKey      = Environment.GetEnvironmentVariable("TRACELIT_API_KEY");
             config.ServiceName = "my-worker";
             config.Environment = "production";
         });
@@ -87,7 +87,7 @@ dotnet add package Tracelit
 ```csharp
 builder.Services.AddTracelit(config =>
 {
-    config.ApiKey      = "tl_live_abc123";
+    config.ApiKey      = Environment.GetEnvironmentVariable("TRACELIT_API_KEY");
     config.ServiceName = "orders-api";
     config.ResourceAttributes = new()
     {
@@ -258,56 +258,6 @@ config.SampleRate = 0.1; // keep 10% of traces
 // In test setup or appsettings.Testing.json
 config.Enabled = false;
 // or: TRACELIT_ENABLED=false
-```
-
----
-
-## Running the SDK's own tests
-
-```bash
-dotnet test
-```
-
----
-
-## Releasing
-
-Use the included helper script to cut a release locally:
-
-```bash
-./release.sh patch          # x.y.Z+1
-./release.sh minor          # x.Y+1.0
-./release.sh major          # X+1.0.0
-./release.sh 1.2.3          # explicit version
-./release.sh patch --dry-run
-```
-
-The script bumps `<Version>` in the `.csproj`, commits, pushes to `main`, then creates and pushes an annotated tag. Pushing the tag triggers the release workflow, which runs tests, packs and publishes to NuGet, and creates a GitHub Release with an auto-generated CHANGELOG entry.
-
----
-
-## Project structure
-
-```
-src/Tracelit/
-├── TracelitClient.cs               Static façade for non-DI usage
-├── TracelitConfiguration.cs        Config with env var defaults + Validate()
-├── TracelitConstants.cs            SDK version constant
-├── Tracing/
-│   ├── ErrorAlwaysOnSampler.cs     Upgrades Drop→RecordOnly for error capture
-│   └── ErrorSpanProcessor.cs       Force-exports unsampled error spans
-├── Metrics/
-│   ├── TracelitMetrics.cs          Counter/Histogram/Gauge wrappers
-│   └── MemoryPollerService.cs      Background process.memory.rss polling
-└── Extensions/
-    └── ServiceCollectionExtensions.cs  AddTracelit() DI integration
-
-tests/Tracelit.Tests/
-├── ConfigurationTests.cs
-├── ErrorAlwaysOnSamplerTests.cs
-├── ErrorSpanProcessorTests.cs
-├── TracelitClientTests.cs
-└── MetricsTests.cs
 ```
 
 ---

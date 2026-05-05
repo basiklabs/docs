@@ -237,6 +237,6 @@ export class AppComponent implements OnInit {
 
 - [What is Tracelit](https://tracelit.app/docs): Product overview
 - [npm package](https://www.npmjs.com/package/@tracelit/tracker): @tracelit/tracker
-- [GitHub](https://github.com/basiklabs/tracelit-lib): Source and issues
+- [GitHub](https://github.com/tracelit-ai): Source and issues
 - [Dashboard](https://tracelit.app): Sign up and manage your sites
-- [Support](mailto:lab@basik.tech): lab@basik.tech
+- [Support](mailto:hey@tracelit.io): hey@tracelit.io

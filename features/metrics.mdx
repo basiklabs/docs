@@ -1,0 +1,187 @@
+---
+title: "Metrics"
+description: "Custom counters, histograms, and gauges alongside automatic runtime and process metrics. All flowing to Tracelit with zero extra infrastructure."
+icon: "flag"
+iconType: "duotone"
+---
+
+Every Tracelit backend SDK ships a metrics API on top of OpenTelemetry. Create custom instruments in your code and the SDK collects automatic runtime metrics in the background — no separate metrics agent needed.
+
+---
+
+## Instrument types
+
+| Type | Use when |
+|---|---|
+| **Counter** | A value that only goes up — requests served, orders placed, emails sent |
+| **Histogram** | A distribution of values — request durations, payload sizes, queue wait time |
+| **Gauge** | A value that can go up or down — active connections, queue depth, cache size |
+
+---
+
+## Custom metrics
+
+<CodeGroup>
+```typescript Node.js
+import Tracelit from "@tracelit/sdk";
+
+// Counter
+const ordersPlaced = Tracelit.metrics.counter("orders.placed", {
+  description: "Total orders placed",
+  unit: "{orders}",
+});
+ordersPlaced?.add(1, { currency: "USD", channel: "web" });
+
+// Histogram
+const apiLatency = Tracelit.metrics.histogram("external.api.duration", {
+  description: "External API call duration",
+  unit: "ms",
+});
+const start = Date.now();
+await callExternalApi();
+apiLatency?.record(Date.now() - start, { service: "stripe" });
+
+// Gauge
+const queueDepth = Tracelit.metrics.gauge("job_queue.depth", {
+  description: "Number of pending background jobs",
+  unit: "{jobs}",
+});
+queueDepth?.record(await queue.pendingCount(), { queue: "default" });
+```
+
+```go Go
+import (
+    "go.opentelemetry.io/otel/metric"
+    "go.opentelemetry.io/otel/attribute"
+)
+
+// Counter
+requests, _ := tracelit.Counter("http.server.requests",
+    metric.WithDescription("Total HTTP requests"),
+    metric.WithUnit("{request}"),
+)
+requests.Add(ctx, 1, metric.WithAttributes(
+    attribute.String("method", r.Method),
+    attribute.Int("status", statusCode),
+))
+
+// Histogram
+latency, _ := tracelit.Histogram("http.server.duration",
+    metric.WithUnit("ms"),
+)
+latency.Record(ctx, durationMs)
+```
+
+```csharp .NET
+// Counter
+var counter = TracelitClient.Metrics.Counter(
+    "orders.placed",
+    description: "Total orders placed",
+    unit: "{orders}");
+
+counter.Add(1,
+    new KeyValuePair<string, object?>("currency", "USD"),
+    new KeyValuePair<string, object?>("channel", "web"));
+
+// Histogram
+var histogram = TracelitClient.Metrics.Histogram(
+    "external.api.duration",
+    description: "External API call duration",
+    unit: "ms");
+
+var sw = Stopwatch.StartNew();
+await CallExternalApiAsync();
+histogram.Record(sw.Elapsed.TotalMilliseconds,
+    new KeyValuePair<string, object?>("service", "stripe"));
+
+// Gauge (callback-based)
+var gauge = TracelitClient.Metrics.Gauge(
+    "job_queue.depth",
+    () => (double)JobQueue.PendingCount,
+    description: "Number of pending background jobs",
+    unit: "{jobs}");
+```
+</CodeGroup>
+
+---
+
+## Observable gauges
+
+Use an observable gauge when the value is expensive to compute and should only be read on each export interval:
+
+```typescript Node.js
+const queueGauge = Tracelit.metrics.observableGauge("message.queue.size", {
+  description: "Estimated message queue size",
+  unit: "{messages}",
+});
+
+queueGauge?.addCallback((result) => {
+  result.observe(getQueueSize(), { queue: "events" });
+});
+```
+
+---
+
+## Automatic metrics
+
+Once the SDK starts, the following metrics are collected with no extra code:
+
+<Tabs>
+  <Tab title="Node.js">
+    | Metric | Type | Description | Interval |
+    |---|---|---|---|
+    | `process.memory.rss` | Gauge | Process RSS memory (MB) | 60 s |
+    | `process.event_loop.lag` | Histogram | Node.js event loop lag (ms) | 30 s |
+    | `http.server.request.count` | Counter | Total HTTP requests (with Express middleware) | — |
+    | `http.server.request.duration` | Histogram | Request duration (ms) | — |
+    | `http.server.error.count` | Counter | 5xx responses | — |
+
+    Add the Express middleware to enable HTTP metrics:
+
+    ```typescript
+    app.use(Tracelit.expressMetricsMiddleware()); // add before routes
+    ```
+  </Tab>
+  <Tab title="Go">
+    | Metric | Type | Description | Interval |
+    |---|---|---|---|
+    | Goroutine count | Gauge | Active goroutines | 60 s |
+    | GC pause time | Histogram | Garbage collection pause durations | — |
+    | Heap allocation | Gauge | Current heap allocation in bytes | 60 s |
+
+    All runtime metrics are collected via the `go.opentelemetry.io/contrib/instrumentation/runtime` package, enabled automatically.
+  </Tab>
+  <Tab title=".NET">
+    | Metric | Type | Description |
+    |---|---|---|
+    | `http.server.request.duration` | Histogram | HTTP request duration |
+    | `http.server.active_requests` | UpDownCounter | In-flight requests |
+    | `http.client.request.duration` | Histogram | Outbound HTTP call duration |
+    | `dotnet.gc.*` | Various | GC collections, heap size, pause time |
+    | `dotnet.thread_pool.*` | Various | Thread pool queue length, worker threads |
+    | `process.memory.rss` | Gauge | Process working set in MB |
+  </Tab>
+</Tabs>
+
+---
+
+## Viewing metrics
+
+All metrics are available in the **Metrics** tab of your service in the Tracelit dashboard. You can:
+
+- Plot any metric by name with custom time ranges and aggregations
+- Overlay metrics from multiple services on a single chart
+- Set alert thresholds on any metric — see [Incidents](/features/incidents)
+
+---
+
+## Learn more
+
+<CardGroup cols={2}>
+  <Card title="Distributed tracing" icon="sitemap" iconType="duotone" href="/features/distributed-tracing">
+    Traces and metrics share the same SDK — no extra setup.
+  </Card>
+  <Card title="Incidents" icon="triangle-exclamation" iconType="duotone" href="/features/incidents">
+    Metric anomalies and thresholds can trigger incidents automatically.
+  </Card>
+</CardGroup>

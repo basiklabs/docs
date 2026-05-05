@@ -1,7 +1,7 @@
 ---
 title: "Platform Changelog"
 description: "Every product release for the Tracelit dashboard, API, incident pipeline, and observability backend."
-icon: "server"
+icon: "clock-rotate-left"
 iconType: "duotone"
 ---
 
@@ -41,7 +41,7 @@ Errors are now classified into three tiers at ingest time, before they reach the
 
 **AI analysis is now gated on severity and stack trace presence.**
 
-Before this change, every incident triggered a Claude analysis regardless of whether there was enough signal to analyse. This wasted AI tokens on HTTP status code errors where the "root cause" is already obvious from the error itself.
+Before this change, every incident triggered an AI analysis regardless of whether there was enough signal to analyse. This wasted resources on HTTP status code errors where the "root cause" is already obvious from the error itself.
 
 AI analysis now runs only when:
 1. Severity is `high` (exception with stack trace), **and**
@@ -49,7 +49,7 @@ AI analysis now runs only when:
 
 **Milestone-based re-alerting replaces "alert every 5 occurrences".**
 
-The old threshold was `occurrence_count % 5 === 0` — every 5th hit sent an alert. For a busy endpoint that generated hundreds of errors this produced dozens of Slack messages per hour for the same root cause.
+The previous behaviour sent an alert every 5 occurrences. For a busy endpoint that generated hundreds of errors this produced dozens of Slack messages per hour for the same root cause.
 
 Alerts now fire at: **1st, 10th, 50th, 100th, 500th, 1000th** occurrence. Everything in between is counted and visible on the incident detail, but silent.
 
@@ -80,7 +80,7 @@ When a known fingerprint fires again, a `recurrence` event is appended to the in
 
 **Incidents no longer get stuck in `investigating`.**
 
-A pipeline collision between the autonomous agent and the observability worker was causing OTel incidents to remain in `investigating` status indefinitely. The agent now correctly ignores incidents that are fully managed by the worker (`trigger_type = 'exception'`).
+A pipeline collision was causing OTel incidents to remain in `investigating` status indefinitely. This has been fixed — incidents opened by the observability pipeline are now correctly excluded from autonomous agent processing.
 
 ---
 
@@ -111,7 +111,7 @@ The short `#REF` suffix at the end of every subject makes it trivial to search y
 
 ### Billing Email Deduplication
 
-The daily over-limit notification is now sent **at most once per calendar day** per workspace. Previously a race condition in the enrichment cron could send the same email multiple times within the same day. The notification is now written atomically to the database before the email is sent — if two workers race, only one succeeds and the second sees the row is already marked.
+The daily over-limit notification is now sent **at most once per calendar day** per workspace. Previously a race condition could send the same email multiple times within the same day. This has been fixed.
 
 ---
 
@@ -135,7 +135,7 @@ PATCH /api/v1/sites/:id/unarchive
 
 **What archiving does:**
 
-- New ingest data is silently dropped within seconds (Redis cache + DB fallback in the batchwriter).
+- New ingest data is silently dropped within seconds of archiving.
 - The archived entity is excluded from list responses by default.
 - Incidents, errors, traces, and logs from before archiving remain fully readable.
 - **Archived entities do not count toward your plan's site or service limit** — archiving genuinely frees up a slot.
@@ -155,10 +155,10 @@ When present, archived items include a non-null `archived_at` timestamp so the U
 
 **Fixes**
 
-- Fixed 4xx HTTP errors being synthesised as incidents when they had no exception. The ingest normaliser now only synthesises errors for HTTP status ≥ 500.
-- Fixed the Redis `NewErrorDedupTTL` for frontend site alerts being too short (25 min), causing rapid re-alerting for the same JS error. Extended to 4 hours.
-- Fixed site alert anomaly state expiring too quickly (30 min → 2 hours), which caused repeated "new error" alerts for the same source file and line.
-- Fixed `GetByToken` in the site middleware returning archived sites, which would allow an archived site's tracking script to keep ingesting events.
+- Fixed 4xx HTTP errors being synthesised as incidents when they had no exception. Only HTTP status ≥ 500 now generates incidents.
+- Fixed frontend site alert deduplication window being too short, causing rapid re-alerting for the same JS error.
+- Fixed site alert anomaly state expiring too quickly, which caused repeated "new error" alerts for the same source file and line.
+- Fixed archived sites being returned by the site token lookup, which would allow an archived site's tracking script to keep ingesting events.
 
 ---
 

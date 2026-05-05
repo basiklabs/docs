@@ -1,0 +1,184 @@
+---
+title: "Distributed tracing"
+description: "Automatic and manual traces across every service in your stack. Full context propagation over HTTP, gRPC, and message queues — no config required."
+icon: "sitemap"
+iconType: "duotone"
+---
+
+Tracelit's backend SDKs speak [OpenTelemetry](https://opentelemetry.io) natively. Drop in the SDK and every inbound request, outbound call, and database query becomes a span — stitched into a single distributed trace across all your services.
+
+---
+
+## Automatic instrumentation
+
+Call one function and the SDK instruments your entire runtime. No per-library config.
+
+| Library / Framework | Node.js | Go | Ruby | .NET |
+|---|:---:|:---:|:---:|:---:|
+| HTTP server | ✅ | ✅ | ✅ | ✅ |
+| HTTP client | ✅ | ✅ | ✅ | ✅ |
+| SQL / ORM | ✅ | ✅ | ✅ | ✅ |
+| Redis | ✅ | — | ✅ | — |
+| gRPC | ✅ | ✅ | ✅ | — |
+| Message queues | ✅ | — | ✅ | — |
+| GraphQL | ✅ | — | — | — |
+
+---
+
+## Manual spans
+
+Add custom spans anywhere in your code to trace business-level operations.
+
+<CodeGroup>
+```typescript Node.js
+import Tracelit from "@tracelit/sdk";
+
+const result = await Tracelit.tracer.startActiveSpan("process-payment", async (span) => {
+  span.setAttribute("payment.id", payment.id);
+  span.setAttribute("payment.currency", currency);
+
+  try {
+    return await processPayment(payment);
+  } catch (err) {
+    span.recordException(err as Error);
+    span.setStatus({ code: 2, message: (err as Error).message });
+    throw err;
+  } finally {
+    span.end();
+  }
+});
+```
+
+```go Go
+ctx, span := tracelit.StartSpan(ctx, "process-payment",
+    tracelit.WithSpanAttributes(map[string]any{
+        "payment.id":       payment.ID,
+        "payment.currency": payment.Currency,
+    }),
+)
+defer span.End()
+
+if err := processPayment(ctx, payment); err != nil {
+    span.RecordError(err)
+    return err
+}
+```
+
+```ruby Ruby
+Tracelit.tracer.in_span("process_payment") do |span|
+  span.set_attribute("payment.id", payment.id.to_s)
+  span.set_attribute("payment.currency", currency)
+
+  process(payment)
+end
+```
+
+```csharp .NET
+using var span = TracelitClient.Tracer.StartActiveSpan("process-payment");
+span?.SetTag("payment.id", payment.Id.ToString());
+span?.SetTag("payment.currency", currency);
+
+try
+{
+    return ProcessPayment(payment);
+}
+catch (Exception ex)
+{
+    span?.RecordException(ex);
+    span?.SetStatus(Status.Error.WithDescription(ex.Message));
+    throw;
+}
+```
+</CodeGroup>
+
+---
+
+## Span kinds
+
+Use the correct span kind so Tracelit renders the right context in the trace view.
+
+| Kind | When to use |
+|---|---|
+| `Internal` | Default — internal operation with no external I/O |
+| `Server` | Inbound request handler (HTTP, gRPC) |
+| `Client` | Outbound call (HTTP, gRPC, database) |
+| `Producer` | Message publish |
+| `Consumer` | Message consume |
+
+---
+
+## Context propagation
+
+Trace context is propagated automatically across service boundaries using standard [W3C TraceContext](https://www.w3.org/TR/trace-context/) headers. Every SDK injects and extracts these headers on all instrumented HTTP and gRPC calls with no extra code.
+
+For manual propagation (e.g. message queues or async jobs):
+
+<CodeGroup>
+```typescript Node.js
+import { propagation, context } from "@opentelemetry/api";
+
+// Inject into message headers before publishing
+const carrier: Record<string, string> = {};
+propagation.inject(context.active(), carrier);
+await queue.publish({ ...message, headers: carrier });
+
+// Extract on the consumer side
+const ctx = propagation.extract(context.active(), message.headers);
+Tracelit.tracer.startActiveSpan("process-job", { context: ctx }, async (span) => {
+  // ...
+  span.end();
+});
+```
+
+```go Go
+import "go.opentelemetry.io/otel/propagation"
+
+// Inject before publishing
+carrier := propagation.MapCarrier{}
+otel.GetTextMapPropagator().Inject(ctx, carrier)
+
+// Extract on the consumer side
+ctx = otel.GetTextMapPropagator().Extract(ctx, carrier)
+ctx, span := tracelit.StartConsumerSpan(ctx, "process-job")
+defer span.End()
+```
+</CodeGroup>
+
+---
+
+## Error guarantee
+
+Tracelit's SDKs guarantee that error spans are **always exported** — even when the parent trace falls outside your configured sample rate. This ensures no error goes undetected regardless of sampling settings.
+
+<Note>
+  Error spans bypass the sampler entirely. Setting `sampleRate: 0.1` keeps 10% of normal traces but **100% of error spans** always reach Tracelit.
+</Note>
+
+---
+
+## Viewing traces
+
+All traces are available in the **Traces** tab of your service in the Tracelit dashboard. You can:
+
+- Filter by service, environment, status, and time range
+- Drill into any trace to see the full span tree with timings and attributes
+- Jump directly from a trace to the linked incident or error
+
+---
+
+## Learn more
+
+<CardGroup cols={2}>
+  <Card title="Node.js SDK" icon="node-js" iconType="brands" href="/sdk/node">
+    Express, Fastify, NestJS, and more — auto-instrumented.
+  </Card>
+  <Card title="Go SDK" icon="golang" iconType="brands" href="/sdk/go">
+    Idiomatic functional-options API with goroutine-safe propagation.
+  </Card>
+  <Card title="Ruby SDK" icon="gem" iconType="duotone" href="/sdk/ruby">
+    Rails, Sinatra, Rack — zero-touch setup via Railtie.
+  </Card>
+  <Card title=".NET SDK" icon="microsoft" iconType="brands" href="/sdk/dotnet">
+    ASP.NET Core DI integration with HttpClient and SqlClient traces.
+  </Card>
+</CardGroup>

@@ -1,0 +1,102 @@
+---
+title: "Incidents"
+description: "Automatic backend incident detection from errors, anomalies, and SLO signals. Every incident includes a full trace, AI root-cause summary, and a path to resolution."
+icon: "triangle-exclamation"
+iconType: "duotone"
+---
+
+Tracelit automatically opens an incident when something in your backend goes wrong — a spike in errors, a new exception type, an anomalous metric, or an SLO burn. No manual alerting rules are required to get started.
+
+---
+
+## How incidents are detected
+
+Tracelit continuously processes your telemetry signals and opens an incident when it sees:
+
+<CardGroup cols={2}>
+  <Card title="Error spike" icon="arrow-trend-up" color="#ef4444">
+    A sudden increase in error rate for a service or endpoint above the baseline.
+  </Card>
+  <Card title="New error type" icon="circle-exclamation" color="#f97316">
+    An exception fingerprint that has never been seen before in this service.
+  </Card>
+  <Card title="Metric anomaly" icon="chart-line" color="#eab308">
+    A metric deviates significantly from its historical pattern (latency, queue depth, etc.).
+  </Card>
+  <Card title="SLO burn" icon="fire-flame-curved" color="#8b5cf6">
+    Your error budget is being consumed faster than the allowed rate.
+  </Card>
+</CardGroup>
+
+---
+
+## Incident lifecycle
+
+Every incident moves through a defined lifecycle:
+
+<Steps>
+  <Step title="Open">
+    Tracelit detects an anomaly and creates the incident with severity, trigger payload, and an AI-generated summary.
+  </Step>
+  <Step title="Acknowledged">
+    A team member has seen it and is investigating. Notifications stop escalating.
+  </Step>
+  <Step title="Resolved">
+    The issue is fixed. Tracelit closes the incident and records the resolution time.
+  </Step>
+</Steps>
+
+You can also **ignore** an incident if it is a known non-issue — Tracelit will not re-open it for the same fingerprint.
+
+---
+
+## What each incident includes
+
+| Field | Description |
+|---|---|
+| Severity | `critical`, `high`, `medium`, or `low` — set by signal type and volume |
+| AI summary | One-sentence description of what went wrong and likely cause |
+| Trigger payload | The raw signal (error, metric, trace) that opened the incident |
+| Linked trace | The trace closest to the incident trigger, with full span tree |
+| Timeline | Chronological comments and status changes |
+| Resolution link | Direct link to the AI-generated fix PR, if one has been created |
+
+---
+
+## Notifications
+
+Tracelit can notify your team the moment an incident opens. Configure destinations in **Settings → Integrations**.
+
+<CardGroup cols={2}>
+  <Card title="Slack" icon="slack" iconType="brands">
+    Incidents posted to a dedicated channel with severity, summary, and quick-action buttons (Acknowledge / View trace / Create fix).
+  </Card>
+  <Card title="Microsoft Teams" icon="microsoft" iconType="brands">
+    Same rich incident cards delivered directly to your Teams channel.
+  </Card>
+</CardGroup>
+
+---
+
+## Alert rules
+
+In addition to automatic detection, you can define custom alert rules on any signal type:
+
+| Signal | Example rule |
+|---|---|
+| `error` | Alert when `payments-api` returns more than 10 errors per minute |
+| `metric` | Alert when `job_queue.depth` exceeds 1,000 for 5 minutes |
+| `log` | Alert when a log line matching `"FATAL"` appears in `auth-service` |
+| `trace` | Alert when p99 latency on `POST /orders` exceeds 2,000 ms |
+
+Configure rules in your service settings under **Alerts**.
+
+---
+
+## From incident to fix
+
+When your service has a GitHub repository connected, Tracelit can automatically generate a fix and open a pull request directly from an incident.
+
+<Card title="GitHub PR integration" icon="code-pull-request" href="/features/github-pr">
+  Connect your repo and let Tracelit go from incident to ready-to-review PR in minutes.
+</Card>

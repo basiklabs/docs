@@ -18,14 +18,22 @@
             "group": "Getting Started",
             "pages": [
               "index",
-              "quickstart",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Frontend SDK",
+            "pages": [
+              "installation/overview",
               "installation/react",
+              "installation/nextjs-app-router",
+              "installation/nextjs-pages-router",
               "installation/vue",
+              "installation/svelte",
               "installation/angular",
               "installation/script-tag",
-              "installation/svelte",
-              "installation/nextjs-app-router",
-              "installation/nextjs-pages-router"
+              "tracking/identify-users",
+              "tracking/privacy-consent"
             ]
           },
           {
@@ -34,14 +42,12 @@
               "features/session-replay",
               "features/feature-tagging",
               "features/error-tracking",
-              "features/ai-resolution"
-            ]
-          },
-          {
-            "group": "Tracking Users",
-            "pages": [
-              "tracking/identify-users",
-              "tracking/privacy-consent"
+              "features/ai-resolution",
+              "features/distributed-tracing",
+              "features/structured-logs",
+              "features/metrics",
+              "features/incidents",
+              "features/github-pr"
             ]
           },
           {
